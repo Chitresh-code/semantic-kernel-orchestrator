@@ -112,7 +112,8 @@ class WorkflowUI:
 
 {'▓' * (i + 1)}{'░' * (len(plan.tasks) - i - 1)} {int((i + 1) / len(plan.tasks) * 100)}%
 """
-            await progress_msg.update(content=progress_content)
+            progress_msg.content = progress_content
+            await progress_msg.update()
 
         return progress_msg
 
@@ -220,7 +221,8 @@ async def main(message: cl.Message):
 
     try:
         # Step 1: Create plan
-        await processing_msg.update(content=f"🔄 **Step 1:** Creating execution plan for your query...")
+        processing_msg.content = f"🔄 **Step 1:** Creating execution plan for your query..."
+        await processing_msg.update()
 
         # Process the query (this will create the plan internally)
         result = await ui.workflow_manager.process_user_query(user_query)
@@ -228,7 +230,8 @@ async def main(message: cl.Message):
         # Get the plan that was created (we'll need to modify the workflow manager to expose this)
         # For now, we'll extract plan info from the result
 
-        await processing_msg.update(content="✅ **Plan Created!** Displaying execution details...")
+        processing_msg.content = "✅ **Plan Created!** Displaying execution details..."
+        await processing_msg.update()
 
         # Display the workflow execution in stages
         if result.success:
@@ -275,11 +278,13 @@ Please try rephrasing your query or contact support if the issue persists.
             await cl.Message(content=error_content).send()
 
         # Update processing message to completion
-        await processing_msg.update(content=f"✅ **Query #{ui.query_count} Completed** in {result.total_execution_time:.2f}s")
+        processing_msg.content = f"✅ **Query #{ui.query_count} Completed** in {result.total_execution_time:.2f}s"
+        await processing_msg.update()
 
     except Exception as e:
         await cl.Message(content=f"❌ **Error processing query:** {str(e)}").send()
-        await processing_msg.update(content=f"❌ **Query #{ui.query_count} Failed:** {str(e)}")
+        processing_msg.content = f"❌ **Query #{ui.query_count} Failed:** {str(e)}"
+        await processing_msg.update()
 
 @cl.on_chat_end
 async def end():
