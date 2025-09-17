@@ -129,7 +129,12 @@ RESPOND WITH JSON ONLY - NO OTHER TEXT."""
 Use only these tools: crm_api, email_calendar, product_catalog, document_generator
 Only use agent_type: sales_assistant
 Valid priorities: low, medium, high, urgent
-IMPORTANT: For dependencies, use kebab-case IDs like "get-customer-information", not full titles.""")
+IMPORTANT: For dependencies, use kebab-case IDs like "get-customer-information", not full titles.
+
+CRITICAL: Break down complex requests into multiple specific tasks. For example:
+- "Pull data AND analyze" = two separate tasks (pull data, then analyze data)
+- "Create AND send" = two separate tasks (create document, then send document)
+- "Research AND propose" = two separate tasks (research, then create proposal)""")
             chat_history.add_user_message(f"{user_query}\n\nRespond with JSON only.")
 
             # Set up execution settings for Gemini (commented out)
