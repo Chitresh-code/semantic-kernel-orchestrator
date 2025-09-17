@@ -62,7 +62,6 @@ class MagenticCoordinator:
             # )
 
             # Create Magentic orchestration without structured output requirement
-            # Try creating the manager without structured output for now
             try:
                 # First try with OpenAI manager
                 self.orchestration = MagenticOrchestration(
@@ -71,15 +70,15 @@ class MagenticCoordinator:
                     agent_response_callback=self._agent_response_callback,
                 )
             except Exception as structured_error:
-                print(f"Warning: Could not create Magentic with OpenAI manager: {structured_error}")
-                print("Trying alternative approach...")
+                print(f"Error: Could not create Magentic with OpenAI manager: {structured_error}")
+                # print("Trying alternative approach...")
 
-                # Create a simple orchestration without the structured output requirement
-                from semantic_kernel.agents import AgentGroupChat
-                self.orchestration = AgentGroupChat(
-                    agents=agents,
-                    selection_strategy=None  # Use default selection
-                )
+                # # Create a simple orchestration without the structured output requirement
+                # from semantic_kernel.agents import AgentGroupChat
+                # self.orchestration = AgentGroupChat(
+                #     agents=agents,
+                #     selection_strategy=None  # Use default selection
+                # )
 
             print("Magentic orchestration initialized successfully")
 

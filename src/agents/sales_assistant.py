@@ -333,3 +333,13 @@ Please execute this task efficiently and provide a comprehensive response."""
             ],
             "tool_categories": ["CRM", "EmailCalendar", "ProductCatalog", "DocumentGenerator"]
         }
+    
+if __name__ == "__main__":
+    async def main():
+        agent = SalesAssistantAgent()
+        tools = await agent.get_available_tools()
+        print("Available Tools:")
+        for category, tool_list in tools.items():
+            print(f"{category}: {', '.join(tool_list)}")
+
+    asyncio.run(main())

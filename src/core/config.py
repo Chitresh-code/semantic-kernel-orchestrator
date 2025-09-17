@@ -64,7 +64,7 @@ class ApplicationConfig(BaseSettings):
     gemini_model_id: str = Field(default="gemini-2.5-pro", env="GEMINI_MODEL_ID")
 
     # OpenAI configuration
-    openai_api_key: str = Field(default="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", env="OPENAI_API_KEY")
+    openai_api_key: str = Field(default="", env="OPENAI_API_KEY")
     openai_model_id: str = Field(default="gpt-4o-mini", env="OPENAI_MODEL_ID")
 
     # Agent configurations
