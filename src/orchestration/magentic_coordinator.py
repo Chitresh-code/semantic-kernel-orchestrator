@@ -137,7 +137,12 @@ When given a task, use the appropriate tools to complete it effectively.""",
 
     def _agent_response_callback(self, message: ChatMessageContent) -> None:
         """Callback function to capture agent responses."""
-        print(f"**{message.name}**: {message.content[:200]}{'...' if len(message.content) > 200 else ''}")
+        # Clean up the output formatting and show full content
+        agent_name = message.name or "Agent"
+        content = message.content or ""
+
+        # Remove the markdown formatting and show clean output
+        print(f"{agent_name}: {content}")
 
         # Store response for later processing
         self.agent_responses.append(AgentResponse(

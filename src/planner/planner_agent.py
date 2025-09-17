@@ -193,31 +193,34 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
 
         # Create tasks with proper IDs and resolve dependencies
         tasks = []
-        task_id_map = {}  # Map from dependency names to actual task IDs
+        task_title_to_id = {}  # Map from task title to generated task ID
 
-        # First pass: create all tasks and build ID mapping
+        # First pass: create mapping from titles to IDs
         for task_req in planner_response.tasks:
             task_id = self._generate_task_id(task_req.title)
-            task_id_map[task_id] = task_id  # Map kebab-case ID to itself
-
-            # Also map from any dependency references
-            for dep in task_req.dependencies:
-                if dep not in task_id_map:
-                    task_id_map[dep] = dep
+            task_title_to_id[task_req.title] = task_id
 
         # Second pass: create tasks with resolved dependencies
         for task_req in planner_response.tasks:
             task_id = self._generate_task_id(task_req.title)
 
-            # Resolve dependencies
+            # Resolve dependencies by finding matching task IDs
             resolved_deps = []
             for dep in task_req.dependencies:
-                if dep in task_id_map:
-                    resolved_deps.append(task_id_map[dep])
+                # Find the task that matches this dependency
+                found_dep = None
+                for title, tid in task_title_to_id.items():
+                    # Check if dependency matches task ID or if we can generate matching ID
+                    generated_dep_id = self._generate_task_id(title)
+                    if dep == generated_dep_id or dep == tid:
+                        found_dep = tid
+                        break
+
+                if found_dep:
+                    resolved_deps.append(found_dep)
                 else:
-                    # Try to find by generating ID from dependency name
-                    resolved_dep = self._generate_task_id(dep)
-                    resolved_deps.append(resolved_dep)
+                    # If no match found, keep the original dependency
+                    resolved_deps.append(dep)
 
             task = Task(
                 id=task_id,
@@ -263,13 +266,31 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
             validation_result["valid"] = False
             validation_result["errors"].append("Circular dependencies detected in task plan")
 
-        # Check if all dependency IDs exist
+        # Check if all dependency IDs exist (with flexible matching)
         task_ids = {task.id for task in plan.tasks}
+        task_id_to_title = {task.id: task.title for task in plan.tasks}
+
         for task in plan.tasks:
             for dep_id in task.dependencies:
                 if dep_id not in task_ids:
-                    validation_result["valid"] = False
-                    validation_result["errors"].append(f"Task '{task.title}' depends on non-existent task ID: {dep_id}")
+                    # Try to find a close match by checking if dependency is a substring or similar
+                    found_match = False
+                    for existing_id in task_ids:
+                        # Check for partial matches (handle apostrophe issues like corporation's vs corporation)
+                        normalized_dep = dep_id.replace("-s-", "-").replace("-s", "")
+                        normalized_existing = existing_id.replace("-s-", "-").replace("-s", "")
+
+                        if (normalized_dep in normalized_existing or
+                            normalized_existing in normalized_dep or
+                            dep_id in existing_id or existing_id in dep_id):
+                            found_match = True
+                            # Fix the dependency in place
+                            task.dependencies = [existing_id if d == dep_id else d for d in task.dependencies]
+                            break
+
+                    if not found_match:
+                        validation_result["valid"] = False
+                        validation_result["errors"].append(f"Task '{task.title}' depends on non-existent task ID: {dep_id}")
 
         # Check for unrealistic duration estimates
         total_duration = sum(task.estimated_duration or 0 for task in plan.tasks)
