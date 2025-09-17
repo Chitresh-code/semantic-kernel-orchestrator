@@ -186,10 +186,33 @@ IMPORTANT: For dependencies, use kebab-case IDs like "get-customer-information",
         plan_id = str(uuid.uuid4())
         current_time = datetime.now().isoformat()
 
-        # Create tasks with proper IDs
+        # Create tasks with proper IDs and resolve dependencies
         tasks = []
+        task_id_map = {}  # Map from dependency names to actual task IDs
+
+        # First pass: create all tasks and build ID mapping
         for task_req in planner_response.tasks:
             task_id = self._generate_task_id(task_req.title)
+            task_id_map[task_id] = task_id  # Map kebab-case ID to itself
+
+            # Also map from any dependency references
+            for dep in task_req.dependencies:
+                if dep not in task_id_map:
+                    task_id_map[dep] = dep
+
+        # Second pass: create tasks with resolved dependencies
+        for task_req in planner_response.tasks:
+            task_id = self._generate_task_id(task_req.title)
+
+            # Resolve dependencies
+            resolved_deps = []
+            for dep in task_req.dependencies:
+                if dep in task_id_map:
+                    resolved_deps.append(task_id_map[dep])
+                else:
+                    # Try to find by generating ID from dependency name
+                    resolved_dep = self._generate_task_id(dep)
+                    resolved_deps.append(resolved_dep)
 
             task = Task(
                 id=task_id,
@@ -200,7 +223,7 @@ IMPORTANT: For dependencies, use kebab-case IDs like "get-customer-information",
                 agent_type=task_req.agent_type,
                 required_tools=task_req.required_tools,
                 estimated_duration=task_req.estimated_duration,
-                dependencies=task_req.dependencies,
+                dependencies=resolved_deps,
                 metadata={"created_by": "planner_agent"}
             )
             tasks.append(task)

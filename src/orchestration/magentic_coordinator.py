@@ -253,7 +253,10 @@ When given a task, use the appropriate tools to complete it effectively.""",
             "- Use the appropriate tools for each task",
             "- Provide detailed and professional responses",
             "- If a task cannot be completed, explain why and suggest alternatives",
-            "- Focus on delivering value to the customer and sales team"
+            "- Focus on delivering value to the customer and sales team",
+            "- COMPLETE ALL TASKS AUTOMATICALLY without waiting for user confirmation",
+            "- For emails/documents, create and finalize them without asking for approval",
+            "- Provide a final summary of all completed tasks"
         ])
 
         return "\n".join(description_parts)
