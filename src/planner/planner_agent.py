@@ -276,11 +276,21 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
                     # Try to find a close match by checking if dependency is a substring or similar
                     found_match = False
                     for existing_id in task_ids:
-                        # Check for partial matches (handle apostrophe issues like corporation's vs corporation)
-                        normalized_dep = dep_id.replace("-s-", "-").replace("-s", "")
-                        normalized_existing = existing_id.replace("-s-", "-").replace("-s", "")
+                        # Handle various apostrophe and normalization issues
+                        # Normalize both IDs for comparison
+                        def normalize_id(id_str):
+                            # Handle corporation's -> corporations vs corporation-s
+                            normalized = id_str.replace("-s-", "-").replace("-s", "").replace("corporations", "corporation")
+                            # Remove extra hyphens and clean up
+                            normalized = '-'.join(filter(None, normalized.split('-')))
+                            return normalized
 
-                        if (normalized_dep in normalized_existing or
+                        normalized_dep = normalize_id(dep_id)
+                        normalized_existing = normalize_id(existing_id)
+
+                        # Check multiple matching strategies
+                        if (normalized_dep == normalized_existing or
+                            normalized_dep in normalized_existing or
                             normalized_existing in normalized_dep or
                             dep_id in existing_id or existing_id in dep_id):
                             found_match = True
