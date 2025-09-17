@@ -52,10 +52,10 @@ class MagenticCoordinator:
                 agent_response_callback=self._agent_response_callback,
             )
 
-            print("✓ Magentic orchestration initialized successfully")
+            print("Magentic orchestration initialized successfully")
 
         except Exception as e:
-            print(f"✗ Failed to initialize Magentic orchestration: {e}")
+            print(f"Failed to initialize Magentic orchestration: {e}")
             raise
 
     async def _create_magentic_agents(self) -> List[Agent]:
@@ -130,10 +130,10 @@ When given a task, use the appropriate tools to complete it effectively.""",
             # Convert plan to Magentic task description
             task_description = self._plan_to_task_description(plan)
 
-            print(f"\n🚀 Executing plan: {plan.id}")
-            print(f"📋 Tasks: {len(plan.tasks)}")
-            print(f"⏱️  Estimated duration: {plan.estimated_total_duration} minutes")
-            print(f"\n📝 Task description for Magentic:")
+            print(f"\nExecuting plan: {plan.id}")
+            print(f"Tasks: {len(plan.tasks)}")
+            print(f"Estimated duration: {plan.estimated_total_duration} minutes")
+            print(f"\nTask description for Magentic:")
             print(task_description)
             print("\n" + "="*50)
 
@@ -256,7 +256,7 @@ When given a task, use the appropriate tools to complete it effectively.""",
 
             test_task = "Please provide a brief overview of your capabilities as a sales assistant."
 
-            print("🧪 Testing Magentic orchestration...")
+            print("Testing Magentic orchestration...")
 
             orchestration_result = await self.orchestration.invoke(
                 task=test_task,
@@ -284,7 +284,7 @@ When given a task, use the appropriate tools to complete it effectively.""",
         if self.runtime:
             try:
                 await self.runtime.stop_when_idle()
-                print("✓ Magentic runtime stopped")
+                print("Magentic runtime stopped")
             except Exception as e:
                 print(f"Warning: Error stopping runtime: {e}")
 

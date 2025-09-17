@@ -18,16 +18,16 @@ class WorkflowManager:
     async def initialize(self):
         """Initialize all components of the workflow."""
         try:
-            print("🔧 Initializing workflow manager...")
+            print("Initializing workflow manager...")
 
             # Initialize the Magentic coordinator
             await self.coordinator.initialize()
 
             self.initialized = True
-            print("✅ Workflow manager initialized successfully")
+            print("Workflow manager initialized successfully")
 
         except Exception as e:
-            print(f"❌ Failed to initialize workflow manager: {e}")
+            print(f"Failed to initialize workflow manager: {e}")
             raise
 
     async def process_user_query(self, user_query: str) -> WorkflowResult:
@@ -38,23 +38,23 @@ class WorkflowManager:
         start_time = datetime.now()
 
         try:
-            print(f"\n🎯 Processing user query: {user_query}")
+            print(f"\nProcessing user query: {user_query}")
 
             # Step 1: Create plan using planner agent
-            print("\n📋 Step 1: Creating execution plan...")
+            print("\nStep 1: Creating execution plan...")
             plan = await self.planner.create_plan(user_query)
 
-            print(f"✅ Plan created with {len(plan.tasks)} tasks")
+            print(f"Plan created with {len(plan.tasks)} tasks")
             for i, task in enumerate(plan.tasks, 1):
                 print(f"   {i}. {task.title} ({task.priority.value})")
 
             # Step 2: Validate the plan
-            print("\n🔍 Step 2: Validating plan...")
+            print("\nStep 2: Validating plan...")
             validation = await self.planner.validate_plan(plan)
 
             if not validation["valid"]:
                 error_msg = f"Plan validation failed: {'; '.join(validation['errors'])}"
-                print(f"❌ {error_msg}")
+                print(f"{error_msg}")
 
                 return WorkflowResult(
                     plan_id=plan.id,
@@ -67,21 +67,21 @@ class WorkflowManager:
                 )
 
             if validation["warnings"]:
-                print(f"⚠️  Plan warnings: {'; '.join(validation['warnings'])}")
+                print(f"Plan warnings: {'; '.join(validation['warnings'])}")
 
-            print("✅ Plan validation passed")
+            print("Plan validation passed")
 
             # Step 3: Execute plan using Magentic orchestration
-            print("\n🚀 Step 3: Executing plan with Magentic orchestration...")
+            print("\nStep 3: Executing plan with Magentic orchestration...")
             result = await self.coordinator.execute_plan(plan)
 
-            print(f"\n✅ Workflow completed in {result.total_execution_time:.2f} seconds")
+            print(f"\nWorkflow completed in {result.total_execution_time:.2f} seconds")
 
             return result
 
         except Exception as e:
             error_msg = f"Workflow execution failed: {str(e)}"
-            print(f"❌ {error_msg}")
+            print(f"{error_msg}")
 
             return WorkflowResult(
                 plan_id="unknown",
@@ -124,7 +124,7 @@ class WorkflowManager:
         """Test the complete workflow with a simple query."""
         test_query = "I need to check on customer CUST001 and send them a follow-up email about our latest product offerings."
 
-        print("\n🧪 Testing complete workflow...")
+        print("\nTesting complete workflow...")
         print(f"Test query: {test_query}")
 
         try:
@@ -133,7 +133,7 @@ class WorkflowManager:
                 await self.initialize()
 
             # Test planner
-            print("\n📋 Testing planner...")
+            print("\nTesting planner...")
             plan = await self.planner.create_plan(test_query)
             planner_test = {
                 "status": "success",
@@ -142,11 +142,11 @@ class WorkflowManager:
             }
 
             # Test coordinator
-            print("\n🤖 Testing Magentic coordinator...")
+            print("\nTesting Magentic coordinator...")
             coordinator_test = await self.coordinator.test_orchestration()
 
             # Test full workflow
-            print("\n🔄 Testing full workflow...")
+            print("\nTesting full workflow...")
             result = await self.process_user_query(test_query)
             workflow_test = {
                 "status": "success" if result.success else "failed",
@@ -216,28 +216,28 @@ class WorkflowManager:
                 await self.coordinator.cleanup()
 
             self.initialized = False
-            print("✅ Workflow manager cleaned up")
+            print("Workflow manager cleaned up")
 
         except Exception as e:
-            print(f"⚠️  Warning during cleanup: {e}")
+            print(f"Warning during cleanup: {e}")
 
     def format_result_for_user(self, result: WorkflowResult) -> str:
         """Format a workflow result for user-friendly display."""
         if not result.success:
-            return f"❌ Sorry, I encountered an error: {result.final_response}"
+            return f"Sorry, I encountered an error: {result.final_response}"
 
         # Create a formatted response
         formatted_parts = [
-            f"✅ Query processed successfully in {result.total_execution_time:.1f} seconds",
+            f"Query processed successfully in {result.total_execution_time:.1f} seconds",
             "",
-            "📋 **Results:**",
+            "**Results:**",
             result.final_response
         ]
 
         if result.agent_responses:
             formatted_parts.extend([
                 "",
-                "🤖 **Agent Activities:**"
+                "**Agent Activities:**"
             ])
 
             for response in result.agent_responses:
