@@ -1,0 +1,11 @@
+[project]
+name = "orchestration"
+version = "0.1.0"
+description = "Multi-agent orchestration system using Ollama and Semantic Kernel"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.11.9",
+    "python-dotenv>=1.1.1",
+    "semantic-kernel>=1.36.0",
+]

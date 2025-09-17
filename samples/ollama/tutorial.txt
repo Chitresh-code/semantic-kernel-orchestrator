@@ -1,0 +1,502 @@
+Chat completion
+05/29/2025
+Choose a programming language
+With chat completion, you can simulate a back-and-forth conversation with an AI agent. This is of course useful for creating chat bots, but it can also be used for creating autonomous agents that can complete business processes, generate code, and more. As the primary model type provided by OpenAI, Google, Mistral, Facebook, and others, chat completion is the most common AI service that you will add to your Semantic Kernel project.
+
+When picking out a chat completion model, you will need to consider the following:
+
+What modalities does the model support (e.g., text, image, audio, etc.)?
+Does it support function calling?
+How fast does it receive and generate tokens?
+How much does each token cost?
+ Important
+
+Of all the above questions, the most important is whether the model supports function calling. If it does not, you will not be able to use the model to call your existing code. Most of the latest models from OpenAI, Google, Mistral, and Amazon all support function calling. Support from small language models, however, is still limited.
+
+To create a chat completion service, you need to install and import the necessary modules and create an instance of the service. Below are the steps to install and create a chat completion service for each AI service provider.
+
+Installing the necessary packages
+Azure OpenAI
+OpenAI
+Azure AI Inference
+Anthropic
+Amazon Bedrock
+Google AI
+Vertex AI
+Mistral AI
+Ollama
+ONNX
+Bash
+
+Copy
+pip install semantic-kernel[ollama]
+Creating a chat completion service
+ Tip
+
+There are three methods to supply the required information to AI services. You may either provide the information directly through the constructor, set the necessary environment variables, or create a .env file within your project directory containing the environment variables. You can visit this page to find all the required environment variables for each AI service provider: https://github.com/microsoft/semantic-kernel/blob/main/python/samples/concepts/setup/ALL_SETTINGS.md
+
+ Tip
+
+The OpenAIChatCompletion, AzureChatCompletion, and AzureAIInferenceChatCompletion services allow you to configure an instruction_role keyword argument. This parameter controls how the system instructions are presented to the model and accepts either "system" or "developer". When using a reasoning model, you should set instruction_role="developer". Any system role messages found in the ChatHistory will be automatically mapped to the developer role before the request is sent to the model.
+
+Azure OpenAI
+OpenAI
+Azure AI Inference
+Anthropic
+Amazon Bedrock
+Google AI
+Vertex AI
+Mistral AI
+Ollama
+ONNX
+Python
+
+Copy
+from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
+
+chat_completion_service = OllamaChatCompletion(
+    ai_model_id="model-id",
+    service_id="my-service-id", # Optional; for targeting specific services within Semantic Kernel
+)
+ Tip
+
+Learn more about Ollama and download the necessary software from here.
+
+You can start using the completion service right away or add the chat completion service to a kernel. You can use the following code to add a service to the kernel.
+
+Python
+
+Copy
+from semantic_kernel import Kernel
+
+# Initialize the kernel
+kernel = Kernel()
+
+# Add the chat completion service created above to the kernel
+kernel.add_service(chat_completion_service)
+Retrieving chat completion services
+Once you've added chat completion services to your kernel, you can retrieve them using the get service method. Below is an example of how you can retrieve a chat completion service from the kernel.
+
+Python
+
+Copy
+from semantic_kernel.connectors.ai.chat_completion_client_base import ChatCompletionClientBase
+
+# Retrieve the chat completion service by type
+chat_completion_service = kernel.get_service(type=ChatCompletionClientBase)
+
+# Retrieve the chat completion service by id
+chat_completion_service = kernel.get_service(service_id="my-service-id")
+
+# Retrieve the default inference settings
+execution_settings = kernel.get_prompt_execution_settings_from_service_id("my-service-id")
+ Tip
+
+Adding the chat completion service to the kernel is not required if you don't need to use other services in the kernel. You can use the chat completion service directly in your code.
+
+Using chat completion services
+Now that you have a chat completion service, you can use it to generate responses from an AI agent. There are two main ways to use a chat completion service:
+
+Non-streaming: You wait for the service to generate an entire response before returning it to the user.
+Streaming: Individual chunks of the response are generated and returned to the user as they are created.
+Before getting started, you will need to manually create an execution settings instance to use the chat completion service if you did not register the service with the kernel.
+
+Azure OpenAI
+OpenAI
+Azure AI Inference
+Anthropic
+Amazon Bedrock
+Google AI
+Vertex AI
+Mistral AI
+Ollama
+ONNX
+Python
+
+Copy
+from semantic_kernel.connectors.ai.ollama import OllamaChatPromptExecutionSettings
+
+execution_settings = OllamaChatPromptExecutionSettings()
+ Tip
+
+To see what you can configure in the execution settings, you can check the class definition in the source code or check out the API documentation.
+
+Below are the two ways you can use a chat completion service to generate responses.
+
+Non-streaming chat completion
+To use non-streaming chat completion, you can use the following code to generate a response from the AI agent.
+
+Python
+
+Copy
+chat_history = ChatHistory()
+chat_history.add_user_message("Hello, how are you?")
+
+response = await chat_completion_service.get_chat_message_content(
+    chat_history=history,
+    settings=execution_settings,
+)
+Streaming chat completion
+To use streaming chat completion, you can use the following code to generate a response from the AI agent.
+
+Python
+
+Copy
+chat_history = ChatHistory()
+chat_history.add_user_message("Hello, how are you?")
+
+response = chat_completion_service.get_streaming_chat_message_content(
+    chat_history=history,
+    settings=execution_settings,
+)
+
+async for chunk in response:
+    print(chunk, end="")
+Next steps
+Now that you've added chat completion services to your Semantic Kernel project, you can start creating conversations with your AI agent. To learn more about using a chat completion service, check out the following articles:
+
+
+
+Exploring the Semantic Kernel ChatCompletionAgent
+05/29/2025
+Choose a programming language
+ Tip
+
+Detailed API documentation related to this discussion is available at:
+
+ChatCompletionAgent
+Chat Completion in Semantic Kernel
+Chat Completion is fundamentally a protocol for a chat-based interaction with an AI model where the chat-history is maintained and presented to the model with each request. Semantic Kernel AI services offer a unified framework for integrating the chat-completion capabilities of various AI models.
+
+A ChatCompletionAgent can leverage any of these AI services to generate responses, whether directed to a user or another agent.
+
+Preparing Your Development Environment
+To proceed with developing an ChatCompletionAgent, configure your development environment with the appropriate packages.
+
+Install the semantic-kernel package:
+
+Bash
+
+Copy
+pip install semantic-kernel
+ Important
+
+Depending upon which AI Service you use as part of the ChatCompletionAgent, you may need to install extra packages. Please check for the required extra on the following page
+
+Creating a ChatCompletionAgent
+A ChatCompletionAgent is fundamentally based on an AI services. As such, creating a ChatCompletionAgent starts with creating a Kernel instance that contains one or more chat-completion services and then instantiating the agent with a reference to that Kernel instance.
+
+There are two ways to create a ChatCompletionAgent:
+
+1. By providing the chat completion service directly
+Python
+
+Copy
+from semantic_kernel.agents import ChatCompletionAgent
+
+# Create the agent by directly providing the chat completion service
+agent = ChatCompletionAgent(
+    service=AzureChatCompletion(),  # your chat completion service instance
+    name="<agent name>",
+    instructions="<agent instructions>",
+)
+2. By creating a Kernel first, adding the service to it, then providing the kernel
+Python
+
+Copy
+# Define the kernel
+kernel = Kernel()
+
+# Add the chat completion service to the kernel
+kernel.add_service(AzureChatCompletion())
+
+# Create the agent using the kernel
+agent = ChatCompletionAgent(
+  kernel=kernel, 
+  name="<agent name>", 
+  instructions="<agent instructions>",
+)
+The first method is useful when you already have a chat completion service ready. The second method is beneficial when you need a kernel that manages multiple services or additional functionalities.
+
+AI Service Selection
+No different from using Semantic Kernel AI services directly, a ChatCompletionAgent supports the specification of a service-selector. A service-selector identifies which AI service to target when the Kernel contains more than one.
+
+ Note
+
+If multiple AI services are present and no service-selector is provided, the same default logic is applied for the agent that you'd find when using an AI services outside of the Agent Framework
+
+Python
+
+Copy
+from semantic_kernel.connectors.ai.open_ai import (
+    AzureChatCompletion,
+    AzureChatPromptExecutionSettings,
+)
+
+# Define the Kernel
+kernel = Kernel()
+
+# Add the AzureChatCompletion AI Service to the Kernel
+kernel.add_service(AzureChatCompletion(service_id="service1"))
+kernel.add_service(AzureChatCompletion(service_id="service2"))
+
+settings = AzureChatPromptExecutionSettings(service_id="service2")
+
+# Create the agent
+agent = ChatCompletionAgent(
+  kernel=kernel, 
+  name="<agent name>", 
+  instructions="<agent instructions>",
+  arguments=KernelArguments(settings=settings)
+)
+Conversing with ChatCompletionAgent
+There are multiple ways to converse with a ChatCompletionAgent.
+
+The easiest is to call and await get_response:
+
+Python
+
+Copy
+# Define agent
+agent = ChatCompletionAgent(...)
+
+# Generate the agent response
+response = await agent.get_response(messages="user input")
+# response is an `AgentResponseItem[ChatMessageContent]` object
+If you want the agent to maintain conversation history between invocations, you can pass it a ChatHistoryAgentThread as follows:
+
+Python
+
+Copy
+
+# Define agent
+agent = ChatCompletionAgent(...)
+
+# Generate the agent response(s)
+response = await agent.get_response(messages="user input")
+
+# Generate another response, continuing the conversation thread from the first response.
+response2 = await agent.get_response(messages="user input", thread=response.thread)
+# process agent response(s)
+
+Calling the invoke method returns an AsyncIterable of AgentResponseItem[ChatMessageContent].
+
+Python
+
+Copy
+# Define agent
+agent = ChatCompletionAgent(...)
+
+# Define the thread
+thread = ChatHistoryAgentThread()
+
+# Generate the agent response(s)
+async for response in agent.invoke(messages="user input", thread=thread):
+  # process agent response(s)
+The ChatCompletionAgent also supports streaming in which the invoke_stream method returns an AsyncIterable of StreamingChatMessageContent:
+
+Python
+
+Copy
+# Define agent
+agent = ChatCompletionAgent(...)
+
+# Define the thread
+thread = ChatHistoryAgentThread()
+
+# Generate the agent response(s)
+async for response in agent.invoke_stream(messages="user input", thread=thread):
+  # process agent response(s)
+Handling Intermediate Messages with a ChatCompletionAgent
+The Semantic Kernel ChatCompletionAgent is designed to invoke an agent that fulfills user queries or questions. During invocation, the agent may execute tools to derive the final answer. To access intermediate messages produced during this process, callers can supply a callback function that handles instances of FunctionCallContent or FunctionResultContent.
+
+Configuring the on_intermediate_message callback within agent.invoke(...) or agent.invoke_stream(...) allows the caller to receive intermediate messages generated during the process of formulating the agent's final response.
+
+Python
+
+Copy
+import asyncio
+from typing import Annotated
+
+from semantic_kernel.agents.chat_completion.chat_completion_agent import ChatCompletionAgent, ChatHistoryAgentThread
+from semantic_kernel.connectors.ai.open_ai.services.azure_chat_completion import AzureChatCompletion
+from semantic_kernel.contents import FunctionCallContent, FunctionResultContent
+from semantic_kernel.contents.chat_message_content import ChatMessageContent
+from semantic_kernel.functions import kernel_function
+
+
+# Define a sample plugin for the sample
+class MenuPlugin:
+    """A sample Menu Plugin used for the concept sample."""
+
+    @kernel_function(description="Provides a list of specials from the menu.")
+    def get_specials(self) -> Annotated[str, "Returns the specials from the menu."]:
+        return """
+        Special Soup: Clam Chowder
+        Special Salad: Cobb Salad
+        Special Drink: Chai Tea
+        """
+
+    @kernel_function(description="Provides the price of the requested menu item.")
+    def get_item_price(
+        self, menu_item: Annotated[str, "The name of the menu item."]
+    ) -> Annotated[str, "Returns the price of the menu item."]:
+        return "$9.99"
+
+
+# This callback function will be called for each intermediate message
+# Which will allow one to handle FunctionCallContent and FunctionResultContent
+# If the callback is not provided, the agent will return the final response
+# with no intermediate tool call steps.
+async def handle_intermediate_steps(message: ChatMessageContent) -> None:
+    for item in message.items or []:
+        if isinstance(item, FunctionCallContent):
+            print(f"Function Call:> {item.name} with arguments: {item.arguments}")
+        elif isinstance(item, FunctionResultContent):
+            print(f"Function Result:> {item.result} for function: {item.name}")
+        else:
+            print(f"{message.role}: {message.content}")
+
+
+async def main() -> None:
+    agent = ChatCompletionAgent(
+        service=AzureChatCompletion(),
+        name="Assistant",
+        instructions="Answer questions about the menu.",
+        plugins=[MenuPlugin()],
+    )
+
+    # Create a thread for the agent
+    # If no thread is provided, a new thread will be
+    # created and returned with the initial response
+    thread: ChatHistoryAgentThread = None
+
+    user_inputs = [
+        "Hello",
+        "What is the special soup?",
+        "How much does that cost?",
+        "Thank you",
+    ]
+
+    for user_input in user_inputs:
+        print(f"# User: '{user_input}'")
+        async for response in agent.invoke(
+            messages=user_input,
+            thread=thread,
+            on_intermediate_message=handle_intermediate_steps,
+        ):
+            print(f"# {response.role}: {response}")
+            thread = response.thread
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+The following demonstrates sample output from the agent invocation process:
+
+Bash
+
+Copy
+User: 'Hello'
+AuthorRole.ASSISTANT: Hi there! How can I assist you today?
+User: 'What is the special soup?'
+Function Call:> MenuPlugin-get_specials with arguments: {}
+Function Result:> 
+        Special Soup: Clam Chowder
+        Special Salad: Cobb Salad
+        Special Drink: Chai Tea
+        for function: MenuPlugin-get_specials
+AuthorRole.ASSISTANT: The special soup today is Clam Chowder. Would you like to know anything else from the menu?
+User: 'How much does that cost?'
+Function Call:> MenuPlugin-get_item_price with arguments: {"menu_item":"Clam Chowder"}
+Function Result:> $9.99 for function: MenuPlugin-get_item_price
+AuthorRole.ASSISTANT: The Clam Chowder costs $9.99. Would you like to know more about the menu or anything else?
+User: 'Thank you'
+AuthorRole.ASSISTANT: You're welcome! If you have any more questions, feel free to ask. Enjoy your day!
+Declarative Spec
+ Important
+
+This feature is in the experimental stage. Features at this stage are under development and subject to change before advancing to the preview or release candidate stage.
+
+The ChatCompletionAgent can be instantiated directly from a YAML declarative specification. This approach allows you to define the agent’s core properties, instructions, and available functions (plugins) in a structured and portable way. By using YAML, you can describe the agent's name, description, instruction prompt, tool set, and model parameters in a single document, making the agent's configuration easily auditable and reproducible.
+
+ Note
+
+Any tools or functions specified in the declarative YAML must already exist in the Kernel instance at the time the agent is created. The agent loader does not create new functions from the spec; instead, it looks up the referenced plugins and functions by their identifiers in the kernel. If a required plugin or function is not present in the kernel, an error will be raised during agent construction.
+
+Example: Creating a ChatCompletionAgent from a YAML spec
+Python
+
+Copy
+import asyncio
+from typing import Annotated
+
+from semantic_kernel import Kernel
+from semantic_kernel.agents import AgentRegistry, ChatHistoryAgentThread
+from semantic_kernel.agents.chat_completion.chat_completion_agent import ChatCompletionAgent
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.functions import kernel_function
+
+# Define a plugin with kernel functions
+class MenuPlugin:
+    @kernel_function(description="Provides a list of specials from the menu.")
+    def get_specials(self) -> Annotated[str, "Returns the specials from the menu."]:
+        return """
+        Special Soup: Clam Chowder
+        Special Salad: Cobb Salad
+        Special Drink: Chai Tea
+        """
+
+    @kernel_function(description="Provides the price of the requested menu item.")
+    def get_item_price(
+        self, menu_item: Annotated[str, "The name of the menu item."]
+    ) -> Annotated[str, "Returns the price of the menu item."]:
+        return "$9.99"
+
+# YAML spec for the agent
+AGENT_YAML = """
+type: chat_completion_agent
+name: Assistant
+description: A helpful assistant.
+instructions: Answer the user's questions using the menu functions.
+tools:
+  - id: MenuPlugin.get_specials
+    type: function
+  - id: MenuPlugin.get_item_price
+    type: function
+model:
+  options:
+    temperature: 0.7
+"""
+
+USER_INPUTS = [
+    "Hello",
+    "What is the special soup?",
+    "What does that cost?",
+    "Thank you",
+]
+
+async def main():
+    kernel = Kernel()
+    kernel.add_plugin(MenuPlugin(), plugin_name="MenuPlugin")
+
+    agent: ChatCompletionAgent = await AgentRegistry.create_from_yaml(
+        AGENT_YAML, kernel=kernel, service=OpenAIChatCompletion()
+    )
+
+    thread: ChatHistoryAgentThread | None = None
+
+    for user_input in USER_INPUTS:
+        print(f"# User: {user_input}")
+        response = await agent.get_response(user_input, thread=thread)
+        print(f"# {response.name}: {response}")
+        thread = response.thread
+
+    await thread.delete() if thread else None
+
+if __name__ == "__main__":
+    asyncio.run(main())
+How-To
+For an end-to-end example for a ChatCompletionAgent, see:
+
+How-To: ChatCompletionAgent
+Next Steps
