@@ -101,7 +101,21 @@ class ProductCatalogTools:
         }
 
     @kernel_function(
-        description="Get product information by ID",
+        description="""Retrieve detailed information about a specific product from the catalog.
+
+        Input Parameters:
+        - product_id (str): Unique product identifier (e.g., 'PROD001', 'PROD002')
+
+        Output:
+        - JSON string containing complete product details:
+          * Basic info: id, name, category, description
+          * Price tiers: Multiple pricing options with features and user limits
+          * Technical requirements: OS support, hardware specs, database compatibility
+          * Implementation details: deployment time, team size, prerequisites
+          * Industry compatibility and ROI information
+        - Error message if product not found
+
+        Example: get_product_info('PROD001') returns full Enterprise Software License details with all pricing tiers and technical specs""",
         name="get_product_info"
     )
     def get_product_info(self, product_id: str) -> str:
@@ -113,7 +127,21 @@ class ProductCatalogTools:
         return json.dumps(product, indent=2)
 
     @kernel_function(
-        description="Search products by category, industry, or keyword",
+        description="""Search for products in the catalog using various criteria and filters.
+
+        Input Parameters:
+        - query (str): Search term to look for in product names and descriptions (e.g., 'software', 'analytics', 'training')
+        - category (str): Optional filter by product category ('Software', 'Services', 'SaaS') (default: None)
+        - industry (str): Optional filter by target industry ('Manufacturing', 'Finance', 'Technology', 'All') (default: None)
+
+        Output:
+        - JSON string containing:
+          * results: Array of matching products with id, name, category, description (truncated to 100 chars)
+          * count: Total number of products found
+        - Returns empty results if no matches found
+        - Searches both product names and descriptions for query terms
+
+        Example: search_products('analytics', 'SaaS', 'Technology') finds SaaS analytics products for technology companies""",
         name="search_products"
     )
     def search_products(self, query: str, category: str = None, industry: str = None) -> str:
@@ -147,7 +175,29 @@ class ProductCatalogTools:
         return json.dumps({"results": results, "count": len(results)}, indent=2)
 
     @kernel_function(
-        description="Generate a price quote for specific products and quantities",
+        description="""Generate a detailed price quote for specific products with automatic discount calculation.
+
+        Input Parameters:
+        - product_configs (str): JSON string with array of product configurations, each containing:
+          * product_id: Product identifier (e.g., 'PROD001')
+          * tier: Pricing tier ('basic', 'professional', 'enterprise', etc.)
+          * quantity: Number of units/licenses (default: 1)
+        - customer_type (str): Customer classification ('new' or 'existing') for loyalty discounts (default: 'new')
+        - industry (str): Customer industry for industry-specific discounts ('nonprofit', 'education', 'government') (default: None)
+
+        Output:
+        - JSON string containing complete quote:
+          * quote_id: Unique quote identifier
+          * created_date and valid_until dates
+          * items: Detailed line items with pricing and features
+          * subtotal: Total before discounts
+          * discounts: Array of applied discounts with rates and amounts
+          * final_total: Total after all discounts
+          * payment_terms and implementation_notes
+        - Automatically applies volume, loyalty, and industry discounts
+        - Error message for invalid product configurations
+
+        Example: generate_quote('[{"product_id":"PROD001","tier":"professional","quantity":1}]', 'existing', 'education') creates quote with educational and loyalty discounts""",
         name="generate_quote"
     )
     def generate_quote(self, product_configs: str, customer_type: str = "new", industry: str = None) -> str:
@@ -270,7 +320,27 @@ class ProductCatalogTools:
             return json.dumps({"error": f"Error generating quote: {e}"})
 
     @kernel_function(
-        description="Get product recommendations based on customer profile",
+        description="""Get intelligent product recommendations based on customer profile and requirements.
+
+        Input Parameters:
+        - industry (str): Customer's industry sector (e.g., 'Manufacturing', 'Finance', 'Technology', 'Healthcare')
+        - company_size (str): Company size category ('small', 'medium', 'large')
+        - budget_range (str): Budget range in format 'min-max' or 'min+' (e.g., '10000-50000', '100000+')
+        - use_case (str): Optional specific use case or requirement (e.g., 'analytics', 'automation') (default: None)
+
+        Output:
+        - JSON string containing:
+          * recommendations: Array of up to 5 recommended products, each with:
+            - product: Basic product information (id, name, category, description)
+            - recommended_tier: Best pricing tier with price and features
+            - score: Recommendation score based on fit
+            - reasons: Array of why this product is recommended
+            - implementation_notes: Timeline and deployment information
+          * customer_profile: Summary of the input criteria used
+        - Products ranked by relevance score considering industry fit, budget, and use case
+        - Only includes products within budget range and suitable for company size
+
+        Example: recommend_products('Manufacturing', 'large', '50000-150000', 'automation') returns enterprise solutions for manufacturing automation""",
         name="recommend_products"
     )
     def recommend_products(self, industry: str, company_size: str, budget_range: str, use_case: str = None) -> str:
@@ -374,7 +444,26 @@ class ProductCatalogTools:
         }, indent=2)
 
     @kernel_function(
-        description="Check product compatibility and integration options",
+        description="""Check compatibility between multiple products and with customer's technical environment.
+
+        Input Parameters:
+        - product_ids (str): JSON array of product IDs to check compatibility for (e.g., '["PROD001", "PROD002"]')
+        - customer_environment (str): Optional JSON object describing customer's technical setup with fields like:
+          * os: Operating system ('Windows Server', 'Linux', 'Cloud')
+          * database: Database system ('SQL Server', 'PostgreSQL', 'Oracle')
+          * existing_systems: Current software in use
+
+        Output:
+        - JSON string containing comprehensive compatibility report:
+          * compatible: Overall compatibility status (true/false)
+          * products_checked: Array of each product with individual compatibility status and notes
+          * integration_options: Available integration methods (APIs, webhooks, connectors)
+          * potential_issues: Array of compatibility concerns or conflicts
+          * recommendations: Suggested actions for resolving issues
+        - Validates technical requirements against customer environment
+        - Identifies integration opportunities between selected products
+
+        Example: check_compatibility('["PROD001", "PROD003"]', '{"os": "Linux", "database": "PostgreSQL"}') checks if Enterprise Software and Cloud Analytics work together on customer's Linux/PostgreSQL setup""",
         name="check_compatibility"
     )
     def check_compatibility(self, product_ids: str, customer_environment: str = None) -> str:

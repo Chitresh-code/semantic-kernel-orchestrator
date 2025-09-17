@@ -79,7 +79,24 @@ Best regards,
         }
 
     @kernel_function(
-        description="Send an email using predefined templates",
+        description="""Send an email using predefined professional templates.
+
+        Input Parameters:
+        - template_name (str): Template to use ('follow_up', 'demo_invite', 'proposal_delivery')
+        - recipient_email (str): Email address of the recipient
+        - **kwargs: Template variables like contact_name, company_name, sender_name, topic, etc.
+
+        Output:
+        - JSON string containing:
+          * status: 'success' if email sent
+          * email_id: Unique identifier for the sent email
+          * recipient: Email address where it was sent
+          * subject: The email subject line
+          * sent_at: Timestamp when email was sent
+          * message: Confirmation message
+        - Error message if template not found or missing variables
+
+        Example: send_email('demo_invite', 'john@acme.com', contact_name='John Smith', company_name='Acme Corp', industry='Manufacturing', sender_name='Sales Team')""",
         name="send_email"
     )
     def send_email(self, template_name: str, recipient_email: str, **kwargs) -> str:
@@ -110,7 +127,25 @@ Best regards,
             return json.dumps({"error": f"Missing template variable: {e}"})
 
     @kernel_function(
-        description="Send a custom email with specified subject and body",
+        description="""Send a custom email with your own subject and body content.
+
+        Input Parameters:
+        - recipient_email (str): Email address of the recipient
+        - subject (str): Email subject line
+        - body (str): Full email body content
+        - sender_name (str): Name of the sender (default: 'Sales Team')
+
+        Output:
+        - JSON string containing:
+          * status: 'success' if email sent
+          * email_id: Unique identifier for the sent email
+          * recipient: Email address where it was sent
+          * subject: The email subject line
+          * sender: Name of the sender
+          * sent_at: Timestamp when email was sent
+          * message: Confirmation message
+
+        Example: send_custom_email('jane@techstart.io', 'Follow up on our meeting', 'Hi Jane, Thank you for the productive meeting yesterday...', 'John Sales')""",
         name="send_custom_email"
     )
     def send_custom_email(self, recipient_email: str, subject: str, body: str, sender_name: str = "Sales Team") -> str:
@@ -128,7 +163,25 @@ Best regards,
         }, indent=2)
 
     @kernel_function(
-        description="Schedule a meeting with specified attendees",
+        description="""Schedule a meeting with specified attendees and check for conflicts.
+
+        Input Parameters:
+        - title (str): Meeting title/subject
+        - start_time (str): Start time in ISO format (e.g., '2024-12-20T14:00:00')
+        - duration_minutes (int): Meeting duration in minutes
+        - attendees (str): Comma-separated list of attendee email addresses
+        - description (str): Optional meeting description/agenda (default: '')
+
+        Output:
+        - JSON string containing:
+          * status: 'success' if meeting scheduled, 'conflict' if time conflicts exist
+          * event_id: Unique identifier for the scheduled meeting
+          * message: Confirmation or conflict details
+          * event_details: Complete meeting information with attendees and times
+        - If conflict detected, includes details of conflicting event
+        - Error message for invalid date format
+
+        Example: schedule_meeting('Product Demo', '2024-12-20T14:00:00', 60, 'john@acme.com,sales@company.com', 'Demo of Enterprise Software features')""",
         name="schedule_meeting"
     )
     def schedule_meeting(self, title: str, start_time: str, duration_minutes: int, attendees: str, description: str = "") -> str:
@@ -175,7 +228,23 @@ Best regards,
             return json.dumps({"error": f"Invalid date format: {e}"})
 
     @kernel_function(
-        description="Find available time slots for scheduling",
+        description="""Find available time slots within a date range for scheduling meetings.
+
+        Input Parameters:
+        - start_date (str): Start date/time to search from in ISO format (e.g., '2024-12-20T09:00:00')
+        - end_date (str): End date/time to search until in ISO format (e.g., '2024-12-21T17:00:00')
+        - duration_minutes (int): Required meeting duration in minutes (default: 60)
+
+        Output:
+        - JSON string containing:
+          * available_slots: Array of available time slots, each with start_time, end_time, duration_minutes
+          * total_found: Total number of available slots found
+        - Only shows business hours (9 AM - 5 PM, Monday-Friday)
+        - Excludes existing calendar conflicts
+        - Returns first 10 available slots
+        - Error message for invalid date format
+
+        Example: find_available_slots('2024-12-20T09:00:00', '2024-12-21T17:00:00', 90) finds 90-minute slots over 2 days""",
         name="find_available_slots"
     )
     def find_available_slots(self, start_date: str, end_date: str, duration_minutes: int = 60) -> str:
@@ -239,7 +308,21 @@ Best regards,
             return json.dumps({"error": f"Invalid date format: {e}"})
 
     @kernel_function(
-        description="Get calendar events for a specific date range",
+        description="""Retrieve calendar events within a specified date range.
+
+        Input Parameters:
+        - start_date (str): Start date to search from in ISO format (e.g., '2024-12-20T00:00:00')
+        - end_date (str): End date to search until in ISO format (e.g., '2024-12-21T23:59:59')
+
+        Output:
+        - JSON string containing:
+          * events: Array of calendar events with id, title, start_time, end_time, attendees, type
+          * count: Total number of events found
+          * date_range: The search date range used
+        - Shows all events (internal meetings, client meetings, etc.)
+        - Error message for invalid date format
+
+        Example: get_calendar_events('2024-12-20T00:00:00', '2024-12-21T23:59:59') returns all events for 2 days""",
         name="get_calendar_events"
     )
     def get_calendar_events(self, start_date: str, end_date: str) -> str:
@@ -267,7 +350,22 @@ Best regards,
             return json.dumps({"error": f"Invalid date format: {e}"})
 
     @kernel_function(
-        description="Cancel or reschedule a meeting",
+        description="""Cancel or reschedule an existing calendar meeting.
+
+        Input Parameters:
+        - event_id (str): Unique identifier of the meeting to manage (e.g., 'evt001')
+        - action (str): Action to perform ('cancel' or 'reschedule')
+        - new_start_time (str): New start time in ISO format - required for reschedule action (e.g., '2024-12-21T10:00:00')
+
+        Output:
+        - JSON string containing:
+          * status: 'success' if action completed
+          * message: Confirmation message describing what was done
+          * cancelled_event OR updated_event: Details of the affected meeting
+        - For reschedule: maintains original duration and updates both start and end times
+        - Error message if event not found, invalid action, or missing new_start_time for reschedule
+
+        Example: manage_meeting('evt001', 'reschedule', '2024-12-21T10:00:00') moves meeting to new time""",
         name="manage_meeting"
     )
     def manage_meeting(self, event_id: str, action: str, new_start_time: str = None) -> str:

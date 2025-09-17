@@ -69,7 +69,21 @@ class CRMTools:
         }
 
     @kernel_function(
-        description="Retrieve comprehensive customer information from CRM system",
+        description="""Retrieve comprehensive customer information from CRM system.
+
+        Input Parameters:
+        - customer_id (str): The unique customer identifier (e.g., 'CUST001')
+
+        Output:
+        - JSON string containing complete customer profile including:
+          * Basic info (name, contact details, industry, company size)
+          * Financial data (annual revenue, lifetime value, status)
+          * Purchase history with dates, products, and amounts
+          * Interaction history with types, dates, and outcomes
+          * Customer preferences for communication and decision-making
+        - Error message if customer not found
+
+        Example: get_customer_data('CUST001') returns full customer profile with purchase and interaction history""",
         name="get_customer_data"
     )
     def get_customer_data(self, customer_id: str) -> str:
@@ -81,7 +95,19 @@ class CRMTools:
         return json.dumps(customer, indent=2)
 
     @kernel_function(
-        description="Search for customers by various criteria",
+        description="""Search for customers by various criteria in the CRM database.
+
+        Input Parameters:
+        - query (str): Search term to look for (e.g., 'Acme', 'Manufacturing', 'active')
+        - criteria (str): Search field - 'name', 'industry', or 'status' (default: 'name')
+
+        Output:
+        - JSON string containing:
+          * results: Array of matching customers with id, name, contact_person, status, industry
+          * count: Total number of matches found
+        - Returns empty results array if no matches
+
+        Example: search_customers('Tech', 'industry') returns all customers in technology industry""",
         name="search_customers"
     )
     def search_customers(self, query: str, criteria: str = "name") -> str:
@@ -117,7 +143,20 @@ class CRMTools:
         return json.dumps({"results": results, "count": len(results)}, indent=2)
 
     @kernel_function(
-        description="Get customer interaction history",
+        description="""Get detailed interaction history for a specific customer.
+
+        Input Parameters:
+        - customer_id (str): The unique customer identifier (e.g., 'CUST001')
+        - limit (int): Maximum number of recent interactions to return (default: 10)
+
+        Output:
+        - JSON string containing:
+          * customer_id: The customer identifier
+          * customer_name: Customer company name
+          * interactions: Array of recent interactions with date, type, subject, outcome
+        - Error message if customer not found
+
+        Example: get_interaction_history('CUST001', 5) returns last 5 interactions with dates and outcomes""",
         name="get_interaction_history"
     )
     def get_interaction_history(self, customer_id: str, limit: int = 10) -> str:
@@ -135,7 +174,23 @@ class CRMTools:
         }, indent=2)
 
     @kernel_function(
-        description="Update customer information in CRM",
+        description="""Update specific customer information fields in the CRM system.
+
+        Input Parameters:
+        - customer_id (str): The unique customer identifier (e.g., 'CUST001')
+        - field (str): The field name to update (e.g., 'status', 'phone', 'email', 'annual_revenue')
+        - value (str): The new value for the field
+
+        Output:
+        - JSON string containing:
+          * status: 'success' if update completed
+          * message: Confirmation message
+          * customer_id: The updated customer ID
+          * updated_field: The field that was modified
+          * new_value: The new value that was set
+        - Error message if customer not found
+
+        Example: update_customer('CUST001', 'status', 'inactive') updates customer status""",
         name="update_customer"
     )
     def update_customer(self, customer_id: str, field: str, value: str) -> str:
@@ -155,7 +210,23 @@ class CRMTools:
         }, indent=2)
 
     @kernel_function(
-        description="Log a new interaction with a customer",
+        description="""Record a new interaction with a customer in the CRM system.
+
+        Input Parameters:
+        - customer_id (str): The unique customer identifier (e.g., 'CUST001')
+        - interaction_type (str): Type of interaction ('email', 'call', 'meeting', 'demo', 'webinar')
+        - subject (str): Brief description of the interaction topic
+        - outcome (str): Result of interaction ('positive', 'neutral', 'interested', 'negotiating', 'pending') (default: 'pending')
+
+        Output:
+        - JSON string containing:
+          * status: 'success' if interaction logged
+          * message: Confirmation message
+          * interaction: Details of the logged interaction with date, type, subject, outcome
+        - Updates customer's last_contact date automatically
+        - Error message if customer not found
+
+        Example: log_interaction('CUST001', 'call', 'Product demo discussion', 'interested') logs a successful demo call""",
         name="log_interaction"
     )
     def log_interaction(self, customer_id: str, interaction_type: str, subject: str, outcome: str = "pending") -> str:
@@ -180,7 +251,23 @@ class CRMTools:
         }, indent=2)
 
     @kernel_function(
-        description="Get next best action recommendations for a customer",
+        description="""Analyze customer data and provide intelligent next best action recommendations.
+
+        Input Parameters:
+        - customer_id (str): The unique customer identifier (e.g., 'CUST001')
+
+        Output:
+        - JSON string containing:
+          * customer_id: The customer identifier
+          * customer_name: Customer company name
+          * suggestions: Array of recommended actions, each with:
+            - action: Specific action to take
+            - priority: 'high', 'medium', or 'low'
+            - reason: Explanation for why this action is recommended
+        - Recommendations based on customer status, last contact date, purchase history, and recent interactions
+        - Error message if customer not found
+
+        Example: suggest_next_action('CUST001') returns prioritized action recommendations like 'Schedule check-in call' or 'Present upsell opportunity'""",
         name="suggest_next_action"
     )
     def suggest_next_action(self, customer_id: str) -> str:

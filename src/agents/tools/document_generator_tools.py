@@ -66,7 +66,36 @@ class DocumentGeneratorTools:
         }
 
     @kernel_function(
-        description="Generate a sales proposal document",
+        description="""Generate a comprehensive sales proposal document with multiple sections.
+
+        Input Parameters:
+        - customer_info (str): JSON object with customer details including:
+          * name: Company name
+          * contact_person: Primary contact name
+          * industry: Industry sector
+          * company_size: Size category
+          * Any other relevant customer information
+        - products (str): JSON object with product/quote information including:
+          * items: Array of products with pricing and features
+          * final_total: Total cost
+          * Other pricing details
+        - requirements (str): Optional JSON object with specific customer requirements array (default: None)
+
+        Output:
+        - JSON string containing complete proposal document:
+          * document_id: Unique proposal identifier
+          * document_type: 'Sales Proposal'
+          * created_date: Document creation date
+          * customer: Customer information
+          * sections: Object with generated content for each section:
+            - executive_summary: Overview and value proposition
+            - customer_requirements: Documented needs and challenges
+            - proposed_solution: Detailed solution description
+            - implementation_timeline: Project phases and timeline
+            - investment_summary: Cost breakdown and ROI
+            - next_steps: Action items and process
+
+        Example: generate_proposal('{"name":"Acme Corp","industry":"Manufacturing"}', '{"items":[...],"final_total":75000}', '{"requirements":["automation","scalability"]}') creates full business proposal""",
         name="generate_proposal"
     )
     def generate_proposal(self, customer_info: str, products: str, requirements: str = None) -> str:
@@ -100,7 +129,35 @@ class DocumentGeneratorTools:
             return json.dumps({"error": f"Error generating proposal: {e}"})
 
     @kernel_function(
-        description="Generate a formal quote document",
+        description="""Generate a formal, professional quote document from pricing data.
+
+        Input Parameters:
+        - quote_data (str): JSON object containing quote information including:
+          * quote_id: Unique quote identifier
+          * items: Array of line items with products, pricing, features
+          * final_total: Total quote amount
+          * valid_until: Quote expiration date
+          * Other pricing breakdown details
+        - customer_info (str): JSON object with customer details including:
+          * name: Company name
+          * contact_person: Primary contact
+          * email: Contact email address
+          * Any other relevant customer information
+
+        Output:
+        - JSON string containing formatted quote document:
+          * document_id: Document identifier based on quote ID
+          * document_type: 'Price Quote'
+          * created_date and valid_until: Document dates
+          * customer: Customer information
+          * quote_details: Complete quote data
+          * formatted_content: Professional formatting with:
+            - header: Document title with customer name
+            - quote_summary: Key quote details and total
+            - product_details: Formatted product line items
+            - terms_and_conditions: Standard quote terms
+
+        Example: generate_quote_document('{"quote_id":"Q20241220","items":[...],"final_total":50000}', '{"name":"TechStart Inc","contact_person":"Jane Doe"}') creates professional quote document""",
         name="generate_quote_document"
     )
     def generate_quote_document(self, quote_data: str, customer_info: str) -> str:
@@ -132,7 +189,34 @@ class DocumentGeneratorTools:
             return json.dumps({"error": f"Error generating quote document: {e}"})
 
     @kernel_function(
-        description="Generate an implementation plan document",
+        description="""Generate a detailed project implementation plan with phases, timelines, and resource requirements.
+
+        Input Parameters:
+        - project_info (str): JSON object with project details including:
+          * project_name: Name of the implementation project
+          * customer: Customer information
+          * products: Products/services being implemented
+          * scope: Project scope and objectives
+          * Any other relevant project details
+        - timeline_weeks (int): Total project duration in weeks (default: 12)
+
+        Output:
+        - JSON string containing comprehensive implementation plan:
+          * document_id: Unique plan identifier
+          * document_type: 'Implementation Plan'
+          * created_date: Document creation date
+          * project: Project information
+          * timeline_weeks: Total project duration
+          * phases: Array of implementation phases with:
+            - phase: Phase name
+            - duration_weeks: Phase duration
+            - activities: Key activities in this phase
+            - deliverables: Expected outputs
+          * resources: Required client and vendor resources
+          * risks: Risk assessment with mitigation strategies
+          * success_criteria: Measurable success indicators
+
+        Example: generate_implementation_plan('{"project_name":"ERP Implementation","customer":"Acme Corp","scope":"Full system deployment"}', 16) creates 16-week implementation roadmap""",
         name="generate_implementation_plan"
     )
     def generate_implementation_plan(self, project_info: str, timeline_weeks: int = 12) -> str:
@@ -160,7 +244,38 @@ class DocumentGeneratorTools:
             return json.dumps({"error": f"Error generating implementation plan: {e}"})
 
     @kernel_function(
-        description="Generate a contract template",
+        description="""Generate a professional service agreement contract template.
+
+        Input Parameters:
+        - agreement_details (str): JSON object with contract specifics including:
+          * services: Array of services being provided
+          * duration: Contract duration
+          * payment_terms: Payment schedule and terms
+          * deliverables: Expected outcomes and deliverables
+          * total_value: Contract total value
+          * Any other agreement-specific details
+        - customer_info (str): JSON object with customer details including:
+          * name: Company name
+          * contact_person: Authorized signatory
+          * address: Company address
+          * email: Contact email
+          * Any other relevant customer information
+
+        Output:
+        - JSON string containing complete contract template:
+          * document_id: Unique contract identifier
+          * document_type: 'Service Agreement'
+          * created_date: Contract creation date
+          * parties: Both client and provider information
+          * agreement_details: Contract specifics
+          * sections: Legal contract sections:
+            - scope_of_services: Detailed service descriptions
+            - deliverables: Expected outputs and timelines
+            - payment_terms: Payment schedule and conditions
+            - legal_terms: Standard legal clauses
+            - signature_blocks: Signature areas for both parties
+
+        Example: generate_contract('{"services":["Implementation","Training"],"duration":"6 months","total_value":100000}', '{"name":"Acme Corp","contact_person":"John Smith","address":"123 Main St"}') creates professional service contract""",
         name="generate_contract"
     )
     def generate_contract(self, agreement_details: str, customer_info: str) -> str:
@@ -199,7 +314,31 @@ class DocumentGeneratorTools:
             return json.dumps({"error": f"Error generating contract: {e}"})
 
     @kernel_function(
-        description="Generate a custom document based on template",
+        description="""Generate a custom document using predefined templates with flexible content.
+
+        Input Parameters:
+        - template_name (str): Template to use from available options:
+          * 'sales_proposal': Professional sales proposal with 6 sections
+          * 'quote': Price quote with product details and terms
+          * 'contract': Service agreement with legal terms
+          * 'implementation_plan': Project plan with phases and timelines
+        - content_data (str): JSON object with data specific to the chosen template
+        - options (str): Optional JSON object with document formatting options (default: None)
+
+        Output:
+        - JSON string containing custom document:
+          * document_id: Unique document identifier
+          * document_type: Formatted template name
+          * created_date: Document creation date
+          * template: Template name used
+          * format: Template format style ('professional', 'standard', 'legal', 'technical')
+          * options: Any formatting options applied
+          * content: Input data used for generation
+          * sections: Generated content for each template section
+        - Content generated based on template structure and provided data
+        - Error message if template not found
+
+        Example: generate_custom_document('sales_proposal', '{"customer":"Acme Corp","products":["Software"]}', '{"format":"executive"}') creates custom proposal using executive formatting""",
         name="generate_custom_document"
     )
     def generate_custom_document(self, template_name: str, content_data: str, options: str = None) -> str:
