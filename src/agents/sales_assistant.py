@@ -3,7 +3,9 @@ import asyncio
 
 from semantic_kernel import Kernel
 from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
+# from semantic_kernel.connectors.ai.google.google_ai import GoogleAIChatCompletion
+# from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 from semantic_kernel.contents import ChatHistory
 
 from src.core.config import config
@@ -16,15 +18,28 @@ class SalesAssistantAgent:
 
     def __init__(self):
         self.config = config.get_sales_assistant_config()
-        self.ollama_config = config.get_ollama_config()
+        # self.ollama_config = config.get_ollama_config()
+        # self.gemini_config = config.get_gemini_config()
+        self.openai_config = config.get_openai_config()
 
         # Initialize kernel and services
         self.kernel = Kernel()
-        self.chat_service = OllamaChatCompletion(
-            ai_model_id=self.ollama_config.ai_model_id,
-            service_id=self.ollama_config.service_id,
-            url=self.ollama_config.host
+        # self.chat_service = GoogleAIChatCompletion(
+        #     gemini_model_id=self.gemini_config["ai_model_id"],
+        #     api_key=self.gemini_config["api_key"]
+        # )
+
+        # Initialize with OpenAI chat service
+        self.chat_service = OpenAIChatCompletion(
+            ai_model_id=self.openai_config["ai_model_id"],
+            api_key=self.openai_config["api_key"]
         )
+
+        # # Initialize kernel and services (Ollama - commented out)
+        # self.chat_service = OllamaChatCompletion(
+        #     ai_model_id=self.ollama_config.ai_model_id
+        # )
+
         self.kernel.add_service(self.chat_service)
 
         # Initialize tools

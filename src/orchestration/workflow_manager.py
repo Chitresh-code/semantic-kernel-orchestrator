@@ -111,8 +111,8 @@ class WorkflowManager:
             },
             "planner": {
                 "available": True,
-                "model": self.planner.ollama_config.ai_model_id,
-                "host": self.planner.ollama_config.host
+                "model": self.planner.openai_config["ai_model_id"],
+                "service": "OpenAI"
             },
             "coordinator": self.coordinator.get_status(),
             "timestamp": datetime.now().isoformat()

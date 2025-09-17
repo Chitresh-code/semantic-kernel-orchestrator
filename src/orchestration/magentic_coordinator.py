@@ -8,8 +8,11 @@ from semantic_kernel.agents import (
     MagenticOrchestration,
     StandardMagenticManager,
 )
+from semantic_kernel.agents.orchestration.tools import structured_outputs_transform
 from semantic_kernel.agents.runtime import InProcessRuntime
-from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
+# from semantic_kernel.connectors.ai.google.google_ai import GoogleAIChatCompletion
+# from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
 from semantic_kernel.contents import ChatMessageContent
 
 from src.core.config import config
@@ -21,7 +24,9 @@ class MagenticCoordinator:
     """Coordinates task execution using Magentic orchestration with Ollama-based agents."""
 
     def __init__(self):
-        self.ollama_config = config.get_ollama_config()
+        # self.ollama_config = config.get_ollama_config()
+        # self.gemini_config = config.get_gemini_config()
+        self.openai_config = config.get_openai_config()
         self.runtime: Optional[InProcessRuntime] = None
         self.orchestration: Optional[MagenticOrchestration] = None
         self.agent_responses: List[AgentResponse] = []
@@ -39,18 +44,42 @@ class MagenticCoordinator:
             # Create agents for Magentic orchestration
             agents = await self._create_magentic_agents()
 
-            # Create Magentic orchestration
-            manager_service = OllamaChatCompletion(
-                ai_model_id=self.ollama_config.ai_model_id,
-                service_id="magentic_manager",
-                url=self.ollama_config.host
+            # Create Magentic orchestration (Gemini - commented out)
+            # manager_service = GoogleAIChatCompletion(
+            #     gemini_model_id=self.gemini_config["ai_model_id"],
+            #     api_key=self.gemini_config["api_key"]
+            # )
+
+            # Create Magentic orchestration with OpenAI
+            manager_service = OpenAIChatCompletion(
+                ai_model_id=self.openai_config["ai_model_id"],
+                api_key=self.openai_config["api_key"]
             )
 
-            self.orchestration = MagenticOrchestration(
-                members=agents,
-                manager=StandardMagenticManager(chat_completion_service=manager_service),
-                agent_response_callback=self._agent_response_callback,
-            )
+            # # Create Magentic orchestration (Ollama - commented out)
+            # manager_service = OllamaChatCompletion(
+            #     ai_model_id=self.ollama_config.ai_model_id
+            # )
+
+            # Create Magentic orchestration without structured output requirement
+            # Try creating the manager without structured output for now
+            try:
+                # First try with OpenAI manager
+                self.orchestration = MagenticOrchestration(
+                    members=agents,
+                    manager=StandardMagenticManager(chat_completion_service=manager_service),
+                    agent_response_callback=self._agent_response_callback,
+                )
+            except Exception as structured_error:
+                print(f"Warning: Could not create Magentic with OpenAI manager: {structured_error}")
+                print("Trying alternative approach...")
+
+                # Create a simple orchestration without the structured output requirement
+                from semantic_kernel.agents import AgentGroupChat
+                self.orchestration = AgentGroupChat(
+                    agents=agents,
+                    selection_strategy=None  # Use default selection
+                )
 
             print("Magentic orchestration initialized successfully")
 
@@ -83,11 +112,18 @@ You have access to:
 
 Always be professional, thorough, and focus on delivering value to customers and the sales team.
 When given a task, use the appropriate tools to complete it effectively.""",
-            service=OllamaChatCompletion(
-                ai_model_id=self.ollama_config.ai_model_id,
-                service_id="sales_agent",
-                url=self.ollama_config.host
+            # service=GoogleAIChatCompletion(
+            #     gemini_model_id=self.gemini_config["ai_model_id"],
+            #     api_key=self.gemini_config["api_key"]
+            # ),
+            service=OpenAIChatCompletion(
+                ai_model_id=self.openai_config["ai_model_id"],
+                api_key=self.openai_config["api_key"]
             ),
+
+            # service=OllamaChatCompletion(
+            #     ai_model_id=self.ollama_config.ai_model_id
+            # ),
         )
 
         agents.append(sales_agent)
@@ -163,7 +199,7 @@ When given a task, use the appropriate tools to complete it effectively.""",
                 plan_id=plan.id,
                 user_query=plan.user_query,
                 agent_responses=self.agent_responses,
-                final_response=final_result,
+                final_response=str(final_result) if final_result else "Task execution completed",
                 total_execution_time=execution_time,
                 success=True,
                 errors=errors

@@ -1,5 +1,6 @@
 from .types import Task, Plan, AgentResponse, WorkflowResult, TaskPriority, TaskStatus
-from .config import config, OllamaConfig, AgentConfig, SalesAssistantConfig, PlannerConfig
+from .config import config, AgentConfig, SalesAssistantConfig, PlannerConfig
+# from .config import OllamaConfig  # Commented out for Gemini testing
 
 __all__ = [
     "Task",
@@ -9,7 +10,7 @@ __all__ = [
     "TaskPriority",
     "TaskStatus",
     "config",
-    "OllamaConfig",
+    # "OllamaConfig",  # Commented out for Gemini testing
     "AgentConfig",
     "SalesAssistantConfig",
     "PlannerConfig"

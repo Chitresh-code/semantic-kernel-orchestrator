@@ -16,7 +16,7 @@ class AgentConfig(BaseModel):
     name: str = Field(..., description="Agent name")
     description: str = Field(..., description="Agent description")
     instructions: str = Field(..., description="Agent instructions/system prompt")
-    max_tokens: int = Field(default=4000, description="Maximum tokens for responses")
+    max_tokens: int = Field(default=8000, description="Maximum tokens for responses")
     temperature: float = Field(default=0.7, description="Temperature for response generation")
 
 
@@ -55,9 +55,17 @@ Always provide structured output with clear task definitions, required tools, an
 class ApplicationConfig(BaseSettings):
     """Main application configuration."""
 
-    # Ollama configuration
-    ollama_ai_model_id: str = Field(default="llama3.1:latest", env="OLLAMA_AI_MODEL_ID")
-    ollama_host: str = Field(default="http://localhost:11434", env="OLLAMA_HOST")
+    # Ollama configuration (commented out for testing with Gemini)
+    # ollama_ai_model_id: str = Field(default="llama3.1:latest", env="OLLAMA_AI_MODEL_ID")
+    # ollama_host: str = Field(default="http://localhost:11434", env="OLLAMA_HOST")
+
+    # Gemini configuration for testing (commented out)
+    gemini_api_key: str = Field(default="AIzaSyAIdNAyi6Xmt--DIj3QXy50A4xxnTM_zE8", env="GEMINI_API_KEY")
+    gemini_model_id: str = Field(default="gemini-2.5-pro", env="GEMINI_MODEL_ID")
+
+    # OpenAI configuration
+    openai_api_key: str = Field(default="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", env="OPENAI_API_KEY")
+    openai_model_id: str = Field(default="gpt-4o-mini", env="OPENAI_MODEL_ID")
 
     # Agent configurations
     enable_debug_logging: bool = Field(default=False, env="DEBUG_LOGGING")
@@ -71,12 +79,26 @@ class ApplicationConfig(BaseSettings):
         env_file = ".env"
         env_file_encoding = "utf-8"
 
-    def get_ollama_config(self) -> OllamaConfig:
-        """Get Ollama configuration."""
-        return OllamaConfig(
-            ai_model_id=self.ollama_ai_model_id,
-            host=self.ollama_host
-        )
+    # def get_ollama_config(self) -> OllamaConfig:
+    #     """Get Ollama configuration."""
+    #     return OllamaConfig(
+    #         ai_model_id=self.ollama_ai_model_id,
+    #         host=self.ollama_host
+    #     )
+
+    def get_gemini_config(self) -> dict:
+        """Get Gemini configuration."""
+        return {
+            "api_key": self.gemini_api_key,
+            "ai_model_id": self.gemini_model_id
+        }
+
+    def get_openai_config(self) -> dict:
+        """Get OpenAI configuration."""
+        return {
+            "api_key": self.openai_api_key,
+            "ai_model_id": self.openai_model_id
+        }
 
     def get_planner_config(self) -> PlannerConfig:
         """Get planner agent configuration."""

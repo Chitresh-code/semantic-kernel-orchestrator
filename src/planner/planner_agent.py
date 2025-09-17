@@ -4,9 +4,11 @@ from datetime import datetime
 from typing import Dict, Any
 
 from semantic_kernel.agents import ChatCompletionAgent
-from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
+# from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
+# from semantic_kernel.connectors.ai.ollama import OllamaChatPromptExecutionSettings
+# from semantic_kernel.connectors.ai.google.google_ai import GoogleAIChatCompletion, GoogleAIChatPromptExecutionSettings
+from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion, OpenAIChatPromptExecutionSettings
 from semantic_kernel.contents import ChatHistory
-from semantic_kernel.prompt_execution_settings.ollama_prompt_execution_settings import OllamaChatPromptExecutionSettings
 
 from src.core.config import config
 from src.core.types import Plan, Task, TaskStatus
@@ -18,14 +20,26 @@ class PlannerAgent:
 
     def __init__(self):
         self.config = config.get_planner_config()
-        self.ollama_config = config.get_ollama_config()
+        # self.ollama_config = config.get_ollama_config()
+        # self.gemini_config = config.get_gemini_config()
+        self.openai_config = config.get_openai_config()
 
-        # Create Ollama chat completion service
-        self.chat_service = OllamaChatCompletion(
-            ai_model_id=self.ollama_config.ai_model_id,
-            service_id=self.ollama_config.service_id,
-            url=self.ollama_config.host
+        # Create Gemini chat completion service (commented out)
+        # self.chat_service = GoogleAIChatCompletion(
+        #     gemini_model_id=self.gemini_config["ai_model_id"],
+        #     api_key=self.gemini_config["api_key"]
+        # )
+
+        # Create OpenAI chat completion service
+        self.chat_service = OpenAIChatCompletion(
+            ai_model_id=self.openai_config["ai_model_id"],
+            api_key=self.openai_config["api_key"]
         )
+
+        # # Create Ollama chat completion service (commented out)
+        # self.chat_service = OllamaChatCompletion(
+        #     ai_model_id=self.ollama_config.ai_model_id
+        # )
 
         # Create the planner agent
         self.agent = ChatCompletionAgent(
@@ -39,48 +53,96 @@ class PlannerAgent:
         """Get enhanced instructions with structured output requirements."""
         return f"""{self.config.instructions}
 
-IMPORTANT: You must respond with valid JSON that matches this exact schema:
+CRITICAL REQUIREMENT: You MUST respond with EXACTLY this JSON structure - do not modify the field names or structure:
 
+{{
+    "tasks": [list of task objects],
+    "summary": "string describing the overall plan",
+    "estimated_total_duration": integer_in_minutes
+}}
+
+Each task must have EXACTLY these fields:
+{{
+    "title": "Brief descriptive title",
+    "description": "What needs to be done",
+    "priority": "low" or "medium" or "high" or "urgent",
+    "agent_type": "sales_assistant",
+    "required_tools": ["crm_api", "email_calendar", "product_catalog", "document_generator"],
+    "estimated_duration": integer_in_minutes,
+    "dependencies": []
+}}
+
+Valid tools: crm_api, email_calendar, product_catalog, document_generator
+Valid priorities: low, medium, high, urgent
+Only agent_type: sales_assistant
+
+MANDATORY EXAMPLE FOR CUSTOMER DATA REQUEST:
 {{
     "tasks": [
         {{
-            "title": "Brief task title (max 100 chars)",
-            "description": "Detailed description of what needs to be done (max 500 chars)",
-            "priority": "low|medium|high|urgent",
+            "title": "Retrieve customer data",
+            "description": "Pull complete customer information from CRM system",
+            "priority": "high",
             "agent_type": "sales_assistant",
-            "required_tools": ["tool1", "tool2"],
-            "estimated_duration": 30,
-            "dependencies": ["task-id-1", "task-id-2"]
+            "required_tools": ["crm_api"],
+            "estimated_duration": 10,
+            "dependencies": []
+        }},
+        {{
+            "title": "Send follow-up email",
+            "description": "Create and send personalized follow-up email to customer",
+            "priority": "medium",
+            "agent_type": "sales_assistant",
+            "required_tools": ["email_calendar"],
+            "estimated_duration": 15,
+            "dependencies": []
         }}
     ],
-    "summary": "Brief summary of the plan (max 200 chars)",
-    "estimated_total_duration": 60
+    "summary": "Retrieve customer data and send follow-up communication",
+    "estimated_total_duration": 25
 }}
 
-Available agent types:
-- sales_assistant: For CRM operations, customer interactions, proposals, scheduling
-
-Available tools:
-- crm_api: Access customer data, update records
-- email_calendar: Send emails, schedule meetings
-- product_catalog: Access product information, pricing
-- document_generator: Create proposals, contracts, reports
-
-Task dependency format: Use kebab-case IDs (e.g., "pull-customer-data", "generate-proposal")
-
-Always ensure your response is valid JSON and follows the schema exactly."""
+RESPOND WITH JSON ONLY - NO OTHER TEXT."""
 
     async def create_plan(self, user_query: str) -> Plan:
         """Create a structured plan from a user query."""
         try:
-            # Create chat history with the user query
+            # Create chat history with system message and user query
             chat_history = ChatHistory()
-            chat_history.add_user_message(user_query)
+            chat_history.add_system_message("""You are a task planner. You MUST respond with valid JSON in this EXACT format:
+{
+    "tasks": [
+        {
+            "title": "Task title",
+            "description": "What to do",
+            "priority": "high",
+            "agent_type": "sales_assistant",
+            "required_tools": ["crm_api"],
+            "estimated_duration": 15,
+            "dependencies": []
+        }
+    ],
+    "summary": "Plan summary",
+    "estimated_total_duration": 15
+}
 
-            # Set up execution settings
-            execution_settings = OllamaChatPromptExecutionSettings(
+Use only these tools: crm_api, email_calendar, product_catalog, document_generator
+Only use agent_type: sales_assistant
+Valid priorities: low, medium, high, urgent
+IMPORTANT: For dependencies, use kebab-case IDs like "get-customer-information", not full titles.""")
+            chat_history.add_user_message(f"{user_query}\n\nRespond with JSON only.")
+
+            # Set up execution settings for Gemini (commented out)
+            # execution_settings = GoogleAIChatPromptExecutionSettings(
+            #     max_tokens=self.config.max_tokens,
+            #     temperature=self.config.temperature
+            # )
+
+            # Set up execution settings for OpenAI with JSON mode
+            execution_settings = OpenAIChatPromptExecutionSettings(
                 max_tokens=self.config.max_tokens,
-                temperature=self.config.temperature
+                temperature=self.config.temperature,
+                response_format={"type": "json_object"}
             )
 
             # Get response from the agent
