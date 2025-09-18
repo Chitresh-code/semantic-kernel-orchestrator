@@ -30,6 +30,79 @@ class WorkflowManager:
             print(f"Failed to initialize workflow manager: {e}")
             raise
 
+    async def process_user_query_with_details(self, user_query: str) -> WorkflowResult:
+        """Process a user query with detailed agent interaction logging."""
+        if not self.initialized:
+            await self.initialize()
+
+        start_time = datetime.now()
+
+        try:
+            print(f"\nProcessing user query: {user_query}")
+
+            # Step 1: Create plan using planner agent
+            print("\nSTEP 1: PLANNING")
+            print("-" * 40)
+            print("Creating execution plan...")
+            plan = await self.planner.create_plan(user_query)
+
+            print(f"Plan created with {len(plan.tasks)} tasks:")
+            for i, task in enumerate(plan.tasks, 1):
+                print(f"   {i}. {task.title} ({task.priority.value})")
+                if task.required_tools:
+                    print(f"      Tools: {', '.join(task.required_tools)}")
+
+            # Step 2: Validate plan
+            print("\nSTEP 2: VALIDATION")
+            print("-" * 40)
+            print("Validating plan...")
+            validation_result = await self.planner.validate_plan(plan)
+
+            if validation_result["valid"]:
+                print("Plan validation passed")
+                if validation_result.get("warnings"):
+                    for warning in validation_result["warnings"]:
+                        print(f"Warning: {warning}")
+            else:
+                print("Plan validation failed:")
+                for error in validation_result["errors"]:
+                    print(f"Error: {error}")
+                raise ValueError(f"Plan validation failed: {validation_result['errors']}")
+
+            # Step 3: Execute plan with Magentic orchestration
+            print(f"\nSTEP 3: EXECUTION")
+            print("-" * 40)
+            print("Executing plan with Magentic orchestration...")
+
+            # Execute the plan using the coordinator
+            result = await self.coordinator.execute_plan_with_details(plan, user_query)
+
+            # Record total execution time
+            end_time = datetime.now()
+            result.total_execution_time = (end_time - start_time).total_seconds()
+
+            print(f"\nWorkflow completed in {result.total_execution_time:.2f} seconds")
+
+            return result
+
+        except Exception as e:
+            end_time = datetime.now()
+            execution_time = (end_time - start_time).total_seconds()
+
+            print(f"Workflow failed after {execution_time:.2f} seconds: {e}")
+
+            # Return error result
+            from src.core.types import WorkflowResult
+            return WorkflowResult(
+                success=False,
+                final_response=f"Workflow execution failed: {str(e)}",
+                errors=[str(e)],
+                agent_responses=[],
+                total_execution_time=execution_time,
+                user_query=user_query,
+                plan_id=""
+            )
+
     async def process_user_query(self, user_query: str) -> WorkflowResult:
         """Process a user query through the complete workflow."""
         if not self.initialized:

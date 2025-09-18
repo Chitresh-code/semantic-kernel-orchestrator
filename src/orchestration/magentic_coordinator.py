@@ -13,7 +13,10 @@ from semantic_kernel.agents.runtime import InProcessRuntime
 # from semantic_kernel.connectors.ai.google.google_ai import GoogleAIChatCompletion
 # from semantic_kernel.connectors.ai.ollama import OllamaChatCompletion
 from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion
+from semantic_kernel.connectors.ai import FunctionChoiceBehavior
 from semantic_kernel.contents import ChatMessageContent
+from semantic_kernel.functions import KernelArguments
+from semantic_kernel.kernel import Kernel
 
 from src.core.config import config
 from src.core.types import Plan, Task, AgentResponse, WorkflowResult, TaskStatus
@@ -90,8 +93,122 @@ class MagenticCoordinator:
         """Create agents for Magentic orchestration."""
         agents = []
 
-        # Sales Assistant Agent (wrapped for Magentic)
+        # Create kernel instance for Sales Assistant
+        sales_kernel = Kernel()
+
+        # Add OpenAI service to the kernel
+        openai_service = OpenAIChatCompletion(
+            ai_model_id=self.openai_config["ai_model_id"],
+            api_key=self.openai_config["api_key"]
+        )
+        sales_kernel.add_service(openai_service)
+
+        # Get execution settings and configure function choice behavior
+        settings = sales_kernel.get_prompt_execution_settings_from_service_id("default")
+        settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
+
+        # Create and add Sales Assistant tools to the kernel
+        sales_assistant = SalesAssistantAgent()
+
+        # Add all CRM tools
+        sales_kernel.add_function(
+            plugin_name="CRM",
+            function=sales_assistant.crm_tools.get_customer_data
+        )
+        sales_kernel.add_function(
+            plugin_name="CRM",
+            function=sales_assistant.crm_tools.search_customers
+        )
+        sales_kernel.add_function(
+            plugin_name="CRM",
+            function=sales_assistant.crm_tools.get_interaction_history
+        )
+        sales_kernel.add_function(
+            plugin_name="CRM",
+            function=sales_assistant.crm_tools.update_customer
+        )
+        sales_kernel.add_function(
+            plugin_name="CRM",
+            function=sales_assistant.crm_tools.log_interaction
+        )
+        sales_kernel.add_function(
+            plugin_name="CRM",
+            function=sales_assistant.crm_tools.suggest_next_action
+        )
+
+        # Add Email/Calendar tools
+        sales_kernel.add_function(
+            plugin_name="EmailCalendar",
+            function=sales_assistant.email_calendar_tools.send_email
+        )
+        sales_kernel.add_function(
+            plugin_name="EmailCalendar",
+            function=sales_assistant.email_calendar_tools.send_custom_email
+        )
+        sales_kernel.add_function(
+            plugin_name="EmailCalendar",
+            function=sales_assistant.email_calendar_tools.schedule_meeting
+        )
+        sales_kernel.add_function(
+            plugin_name="EmailCalendar",
+            function=sales_assistant.email_calendar_tools.find_available_slots
+        )
+        sales_kernel.add_function(
+            plugin_name="EmailCalendar",
+            function=sales_assistant.email_calendar_tools.get_calendar_events
+        )
+        sales_kernel.add_function(
+            plugin_name="EmailCalendar",
+            function=sales_assistant.email_calendar_tools.manage_meeting
+        )
+
+        # Add Product Catalog tools
+        sales_kernel.add_function(
+            plugin_name="ProductCatalog",
+            function=sales_assistant.product_catalog_tools.get_product_info
+        )
+        sales_kernel.add_function(
+            plugin_name="ProductCatalog",
+            function=sales_assistant.product_catalog_tools.search_products
+        )
+        sales_kernel.add_function(
+            plugin_name="ProductCatalog",
+            function=sales_assistant.product_catalog_tools.generate_quote
+        )
+        sales_kernel.add_function(
+            plugin_name="ProductCatalog",
+            function=sales_assistant.product_catalog_tools.recommend_products
+        )
+        sales_kernel.add_function(
+            plugin_name="ProductCatalog",
+            function=sales_assistant.product_catalog_tools.check_compatibility
+        )
+
+        # Add Document Generator tools
+        sales_kernel.add_function(
+            plugin_name="DocumentGenerator",
+            function=sales_assistant.document_generator_tools.generate_proposal
+        )
+        sales_kernel.add_function(
+            plugin_name="DocumentGenerator",
+            function=sales_assistant.document_generator_tools.generate_quote_document
+        )
+        sales_kernel.add_function(
+            plugin_name="DocumentGenerator",
+            function=sales_assistant.document_generator_tools.generate_implementation_plan
+        )
+        sales_kernel.add_function(
+            plugin_name="DocumentGenerator",
+            function=sales_assistant.document_generator_tools.generate_contract
+        )
+        sales_kernel.add_function(
+            plugin_name="DocumentGenerator",
+            function=sales_assistant.document_generator_tools.generate_custom_document
+        )
+
+        # Create the Sales Assistant Agent with proper kernel configuration
         sales_agent = ChatCompletionAgent(
+            kernel=sales_kernel,
             name="SalesAssistant",
             description="A sales assistant with access to CRM, email/calendar, product catalog, and document generation tools",
             instructions="""You are a sales assistant AI with comprehensive sales support capabilities.
@@ -110,19 +227,8 @@ You have access to:
 - Document generation for proposals and contracts
 
 Always be professional, thorough, and focus on delivering value to customers and the sales team.
-When given a task, use the appropriate tools to complete it effectively.""",
-            # service=GoogleAIChatCompletion(
-            #     gemini_model_id=self.gemini_config["ai_model_id"],
-            #     api_key=self.gemini_config["api_key"]
-            # ),
-            service=OpenAIChatCompletion(
-                ai_model_id=self.openai_config["ai_model_id"],
-                api_key=self.openai_config["api_key"]
-            ),
-
-            # service=OllamaChatCompletion(
-            #     ai_model_id=self.ollama_config.ai_model_id
-            # ),
+When given a task, use the appropriate tools to complete it effectively. ALWAYS use the available tools to get real data instead of making assumptions.""",
+            arguments=KernelArguments(settings=settings),
         )
 
         agents.append(sales_agent)
@@ -224,6 +330,94 @@ When given a task, use the appropriate tools to complete it effectively.""",
             return WorkflowResult(
                 plan_id=plan.id,
                 user_query=plan.user_query,
+                agent_responses=self.agent_responses,
+                final_response=f"Execution failed: {str(e)}",
+                total_execution_time=execution_time,
+                success=False,
+                errors=errors
+            )
+
+    async def execute_plan_with_details(self, plan: Plan, user_query: str) -> WorkflowResult:
+        """Execute a plan with detailed agent interaction logging."""
+        if not self.orchestration or not self.runtime:
+            raise RuntimeError("Magentic orchestration not initialized. Call initialize() first.")
+
+        start_time = datetime.now()
+        self.agent_responses = []  # Reset responses for new execution
+        errors = []
+
+        try:
+            # Convert plan to Magentic task description
+            task_description = self._plan_to_task_description(plan)
+
+            print(f"\nExecuting plan: {plan.id}")
+            print(f"Tasks: {len(plan.tasks)}")
+
+            # Show detailed task breakdown
+            for i, task in enumerate(plan.tasks, 1):
+                print(f"\nTask {i}: {task.title}")
+                print(f"   Description: {task.description}")
+                print(f"   Priority: {task.priority.value}")
+                if task.required_tools:
+                    print(f"   Tools: {', '.join(task.required_tools)}")
+                if task.dependencies:
+                    print(f"   Dependencies: {', '.join(task.dependencies)}")
+
+            print(f"\nMAGENTIC ORCHESTRATION EXECUTING...")
+            print("=" * 50)
+
+            # Execute using Magentic orchestration
+            orchestration_result = await self.orchestration.invoke(
+                task=task_description,
+                runtime=self.runtime,
+            )
+
+            # Wait for results
+            final_result = await orchestration_result.get()
+
+            # Update task statuses to completed
+            for task in plan.tasks:
+                task.status = TaskStatus.COMPLETED
+
+            # Calculate execution time
+            end_time = datetime.now()
+            execution_time = (end_time - start_time).total_seconds()
+
+            print(f"\nEXECUTION COMPLETED")
+            print("=" * 50)
+
+            # Update agent responses with actual task IDs
+            for i, response in enumerate(self.agent_responses):
+                if i < len(plan.tasks):
+                    response.task_id = plan.tasks[i].id
+
+            return WorkflowResult(
+                plan_id=plan.id,
+                user_query=user_query,
+                agent_responses=self.agent_responses,
+                final_response=str(final_result) if final_result else "Task execution completed",
+                total_execution_time=execution_time,
+                success=True,
+                errors=errors
+            )
+
+        except Exception as e:
+            error_msg = f"Execution failed: {str(e)}"
+            errors.append(error_msg)
+
+            # Mark remaining tasks as failed
+            for task in plan.tasks:
+                if task.status == TaskStatus.PENDING:
+                    task.status = TaskStatus.FAILED
+
+            end_time = datetime.now()
+            execution_time = (end_time - start_time).total_seconds()
+
+            print(f"\nExecution failed after {execution_time:.2f} seconds: {e}")
+
+            return WorkflowResult(
+                plan_id=plan.id,
+                user_query=user_query,
                 agent_responses=self.agent_responses,
                 final_response=f"Execution failed: {str(e)}",
                 total_execution_time=execution_time,

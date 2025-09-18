@@ -10,7 +10,7 @@ from src.orchestration import WorkflowManager
 
 
 class OrchestrationChatLoop:
-    """Simple chat loop interface for the multi-agent orchestration system."""
+    """Enhanced chat loop interface showing detailed agent interactions."""
 
     def __init__(self):
         self.workflow_manager = WorkflowManager()
@@ -35,8 +35,11 @@ class OrchestrationChatLoop:
         """Print welcome message and instructions."""
         print("\nMulti-Agent Sales Orchestration System")
         print("=" * 60)
-        print("This system uses a planner agent to break down your queries")
-        print("into tasks, then coordinates specialized sales agents to execute them.")
+        print("This system shows detailed agent thinking, tool calls, and interactions:")
+        print("• Planner agent breaking down queries into tasks")
+        print("• Agent thinking process and tool selection")
+        print("• Real-time tool calls and results")
+        print("• Step-by-step workflow execution")
         print()
         print("What I can help you with:")
         print("• Customer relationship management (CRM operations)")
@@ -47,15 +50,14 @@ class OrchestrationChatLoop:
         print("• Document creation (proposals, contracts, plans)")
         print()
         print("Example queries:")
+        print("• 'Review Acme Corporation's account and identify upselling opportunities'")
         print("• 'Pull customer data for CUST001 and suggest next actions'")
         print("• 'Generate a quote for Enterprise Software for manufacturing company'")
         print("• 'Schedule a demo meeting with TechStart Inc and send follow-up email'")
-        print("• 'Create a sales proposal for a new prospect in the finance industry'")
         print()
         print("Commands:")
         print("• 'help' - Show this help message")
         print("• 'status' - Show system status")
-        print("• 'test' - Run system tests")
         print("• 'capabilities' - Show detailed capabilities")
         print("• 'exit' or 'quit' - Exit the system")
         print("=" * 60)
@@ -82,13 +84,6 @@ class OrchestrationChatLoop:
             self.print_status(status)
             return True
 
-        elif command == 'test':
-            print("\nRunning System Tests...")
-            print("-" * 30)
-            test_results = await self.workflow_manager.test_workflow()
-            self.print_test_results(test_results)
-            return True
-
         elif command == 'capabilities':
             print("\nSystem Capabilities:")
             print("-" * 30)
@@ -110,28 +105,6 @@ class OrchestrationChatLoop:
         print(f"Coordinator: {'Ready' if coord_status.get('orchestration_ready') else 'Not Ready'}")
         print(f"   Agents: {coord_status.get('available_agents', 0)}")
         print(f"Status Time: {status.get('timestamp', 'Unknown')}")
-
-    def print_test_results(self, results: dict):
-        """Print test results in a readable format."""
-        overall = results.get("overall_status", "unknown")
-        print(f"Overall Status: {'PASSED' if overall == 'success' else 'FAILED'}")
-
-        if "planner_test" in results:
-            planner = results["planner_test"]
-            print(f"Planner: {'PASS' if planner.get('status') == 'success' else 'FAIL'}")
-            print(f"   Tasks Created: {planner.get('tasks_created', 0)}")
-
-        if "coordinator_test" in results:
-            coordinator = results["coordinator_test"]
-            print(f"Coordinator: {'PASS' if coordinator.get('status') == 'success' else 'FAIL'}")
-
-        if "workflow_test" in results:
-            workflow = results["workflow_test"]
-            print(f"Full Workflow: {'PASS' if workflow.get('status') == 'success' else 'FAIL'}")
-            print(f"   Execution Time: {workflow.get('execution_time', 0):.2f}s")
-
-        if results.get("overall_status") == "failed":
-            print(f"Error: {results.get('error', 'Unknown error')}")
 
     def print_capabilities(self, capabilities: dict):
         """Print system capabilities in a readable format."""
@@ -158,12 +131,15 @@ class OrchestrationChatLoop:
             print(f"   {i}. {example}")
 
     async def process_query(self, user_query: str) -> str:
-        """Process a user query and return the response."""
+        """Process a user query and return the response with detailed logging."""
         try:
             print(f"\nProcessing: {user_query}")
-            print("-" * 50)
+            print("=" * 60)
 
-            result = await self.workflow_manager.process_user_query(user_query)
+            # Process with detailed logging
+            result = await self.workflow_manager.process_user_query_with_details(user_query)
+
+            # Format and display results
             response = self.workflow_manager.format_result_for_user(result)
 
             self.query_count += 1
