@@ -17,35 +17,39 @@ This system implements an intelligent workflow orchestration architecture where 
 - **Workflow Manager**: Central coordinator that manages the entire pipeline from query to response
 - **Planner Agent**: Analyzes user requests and creates structured execution plans with task dependencies
 - **Magentic Coordinator**: Orchestrates task execution using Semantic Kernel's Magentic framework
-- **Sales Assistant Agent**: Specialized agent with access to CRM, email, product catalog, and document tools
+- **Specialized Agents**: Four focused agents handle distinct business functions
 
-### Agent Tools
+### Specialized Agents
 
-The Sales Assistant Agent has access to four categories of tools:
+The system employs four specialized agents with distributed tool access:
 
-### **CRM Tools (6 tools)**
+### **CRM Specialist Agent (6 tools)**
 
-- Customer data retrieval and management
-- Contact information updates
-- Purchase history analysis
+- Customer data retrieval and search
+- Interaction history tracking
+- Customer information updates
+- Next action recommendations
 
-### **Email & Calendar Tools (6 tools)**
+### **Communication Agent (6 tools)**
 
-- Email composition and sending
+- Email composition and delivery
 - Meeting scheduling and calendar coordination
-- Follow-up communication management
+- Calendar availability management
+- Meeting logistics coordination
 
-### **Product Catalog Tools (5 tools)**
+### **Product Specialist Agent (5 tools)**
 
 - Product information and pricing access
-- Inventory status checking
-- Recommendation generation
+- Product search and recommendations
+- Quote generation and pricing analysis
+- Compatibility verification
 
-### **Document Generator Tools (5 tools)**
+### **Document Specialist Agent (5 tools)**
 
-- Proposal and quote generation
-- Contract creation
-- Report and analysis document drafting
+- Proposal and quote document generation
+- Contract drafting
+- Implementation plan development
+- Custom business document creation
 
 ## Requirements
 
@@ -179,6 +183,10 @@ This will execute:
 src/
   core/           # Core types and configuration
   agents/         # Specialized agents and tools
+    crm_specialist.py      # CRM operations agent
+    communication_agent.py # Email and calendar agent
+    product_specialist.py  # Product catalog agent
+    document_specialist.py # Document generation agent
   planner/        # Task planning and decomposition
   orchestration/  # Workflow coordination and execution
   main.py         # CLI interface
@@ -191,11 +199,12 @@ quick_test.py     # Quick validation test
 ## Features
 
 - Automatic task decomposition from natural language queries
+- Specialized agent architecture with distributed tool access
 - Multi-agent coordination with dependency management
 - Comprehensive tool integration for sales operations
 - Professional document and communication generation
 - Structured JSON output with validation
 - Error handling and workflow recovery
-- Extensible architecture for additional agents and tools
+- Intelligent task routing based on agent capabilities
 
 This system demonstrates advanced AI orchestration capabilities for business process automation, specifically tailored for sales and customer relationship management workflows
