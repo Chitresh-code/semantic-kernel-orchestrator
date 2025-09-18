@@ -213,6 +213,13 @@ class MagenticCoordinator:
             description="A sales assistant with access to CRM, email/calendar, product catalog, and document generation tools",
             instructions="""You are a sales assistant AI with comprehensive sales support capabilities.
 
+CRITICAL EXECUTION RULES:
+1. ALWAYS execute tasks IMMEDIATELY and AUTOMATICALLY without asking for approval
+2. NEVER wait for user confirmation - proceed with all tasks autonomously
+3. ALWAYS show your thinking process step by step
+4. ALWAYS announce which tools you are using and why
+5. ALWAYS use real tools to get actual data - never make assumptions
+
 Your responsibilities include:
 1. Managing customer relationships through CRM operations
 2. Generating quotes and proposals for customers
@@ -221,13 +228,27 @@ Your responsibilities include:
 5. Creating professional documents like contracts and implementation plans
 
 You have access to:
-- CRM tools for customer data and interaction tracking
-- Email and calendar tools for communication and scheduling
-- Product catalog for pricing and recommendations
-- Document generation for proposals and contracts
+- CRM tools: get_customer_data, search_customers, get_interaction_history, update_customer, log_interaction, suggest_next_action
+- Email and calendar tools: send_email, send_custom_email, schedule_meeting, find_available_slots, get_calendar_events, manage_meeting
+- Product catalog tools: get_product_info, search_products, generate_quote, recommend_products, check_compatibility
+- Document generation tools: generate_proposal, generate_quote_document, generate_implementation_plan, generate_contract, generate_custom_document
 
-Always be professional, thorough, and focus on delivering value to customers and the sales team.
-When given a task, use the appropriate tools to complete it effectively. ALWAYS use the available tools to get real data instead of making assumptions.""",
+REQUIRED FORMAT FOR ALL RESPONSES:
+1. THINKING: State what you need to do and which tools you plan to use
+2. EXECUTING: Announce each tool you're calling and why
+3. RESULT: Show what data you received from the tool
+4. ANALYSIS: Explain what the data means
+5. NEXT: If more tools are needed, repeat the process
+6. SUMMARY: Provide final conclusions and recommendations
+
+EXAMPLE:
+THINKING: I need to pull customer data for the requested company
+EXECUTING: Calling get_customer_data to retrieve customer information
+RESULT: [actual tool output]
+ANALYSIS: Based on this data, I can see that...
+SUMMARY: Here are my findings and recommendations...
+
+Always be professional, thorough, and focus on delivering value to customers and the sales team.""",
             arguments=KernelArguments(settings=settings),
         )
 
@@ -242,13 +263,54 @@ When given a task, use the appropriate tools to complete it effectively. ALWAYS 
         return agents
 
     def _agent_response_callback(self, message: ChatMessageContent) -> None:
-        """Callback function to capture agent responses."""
-        # Clean up the output formatting and show full content
+        """Callback function to capture agent responses with detailed tool call information."""
         agent_name = message.name or "Agent"
         content = message.content or ""
+        tools_used = []
 
-        # Remove the markdown formatting and show clean output
-        print(f"{agent_name}: {content}")
+        # Show content if available
+        if content.strip():
+            print(f"{agent_name}: {content}")
+
+        # Check for function calls and results in the message
+        if hasattr(message, 'items') and message.items:
+            for item in message.items:
+                # Import the content types we need
+                from semantic_kernel.contents import FunctionCallContent, FunctionResultContent
+
+                if isinstance(item, FunctionCallContent):
+                    function_name = item.name
+                    tools_used.append(function_name)
+                    print(f"TOOL CALL: {function_name}")
+                    if item.arguments:
+                        import json
+                        try:
+                            # Handle different argument formats
+                            if hasattr(item.arguments, 'items'):
+                                # It's already a dict-like object
+                                args_dict = dict(item.arguments.items())
+                            elif isinstance(item.arguments, dict):
+                                args_dict = item.arguments
+                            else:
+                                # Try to convert to string representation
+                                args_dict = str(item.arguments)
+                            print(f"Arguments: {json.dumps(args_dict, indent=2)}")
+                        except Exception as e:
+                            print(f"Arguments: {item.arguments} (format error: {e})")
+                    print("-" * 40)
+
+                elif isinstance(item, FunctionResultContent):
+                    print(f"TOOL RESULT from {item.name}:")
+                    print(f"{item.result}")
+                    print("-" * 40)
+
+        # If this is a tool-related message but no content, show debugging info
+        if not content.strip() and hasattr(message, 'items') and message.items:
+            print(f"{agent_name}: [Processing tool calls...]")
+
+        # If no content and no items, this might be an internal message
+        if not content.strip() and (not hasattr(message, 'items') or not message.items):
+            print(f"{agent_name}: [Internal processing...]")
 
         # Store response for later processing
         self.agent_responses.append(AgentResponse(
@@ -256,10 +318,11 @@ When given a task, use the appropriate tools to complete it effectively. ALWAYS 
             task_id="magentic_task",  # Will be updated with actual task ID
             content=message.content or "",
             success=True,
-            tools_used=[],
+            tools_used=tools_used,
             metadata={
                 "timestamp": datetime.now().isoformat(),
-                "response_length": len(message.content or "")
+                "response_length": len(message.content or ""),
+                "function_calls": len([item for item in (message.items or []) if hasattr(item, 'name')])
             }
         ))
 
@@ -446,14 +509,19 @@ When given a task, use the appropriate tools to complete it effectively. ALWAYS 
             description_parts.extend(task_desc)
 
         description_parts.extend([
-            "Important guidelines:",
+            "CRITICAL EXECUTION INSTRUCTIONS:",
+            "- EXECUTE ALL TASKS IMMEDIATELY AND AUTOMATICALLY",
+            "- NEVER ASK FOR USER APPROVAL OR CONFIRMATION",
+            "- DO NOT WAIT FOR ANY INPUT - PROCEED AUTONOMOUSLY",
             "- Execute tasks in the order specified, respecting dependencies",
-            "- Use the appropriate tools for each task",
+            "- Use the appropriate tools for each task and show your tool usage",
+            "- Always announce what tool you are calling and why",
+            "- Show the results you get from each tool call",
             "- Provide detailed and professional responses",
             "- If a task cannot be completed, explain why and suggest alternatives",
             "- Focus on delivering value to the customer and sales team",
-            "- COMPLETE ALL TASKS AUTOMATICALLY without waiting for user confirmation",
             "- For emails/documents, create and finalize them without asking for approval",
+            "- Use the THINKING/EXECUTING/RESULT/ANALYSIS format for all responses",
             "- Provide a final summary of all completed tasks"
         ])
 

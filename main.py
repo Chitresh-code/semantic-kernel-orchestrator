@@ -20,7 +20,7 @@ class OrchestrationChatLoop:
     async def initialize(self):
         """Initialize the orchestration system."""
         print("Initializing Multi-Agent Orchestration System...")
-        print("=" * 60)
+        print("-" * 60)
 
         try:
             await self.workflow_manager.initialize()
@@ -34,33 +34,7 @@ class OrchestrationChatLoop:
     def print_welcome(self):
         """Print welcome message and instructions."""
         print("\nMulti-Agent Sales Orchestration System")
-        print("=" * 60)
-        print("This system shows detailed agent thinking, tool calls, and interactions:")
-        print("• Planner agent breaking down queries into tasks")
-        print("• Agent thinking process and tool selection")
-        print("• Real-time tool calls and results")
-        print("• Step-by-step workflow execution")
-        print()
-        print("What I can help you with:")
-        print("• Customer relationship management (CRM operations)")
-        print("• Sales process automation and next best actions")
-        print("• Quote and proposal generation")
-        print("• Meeting scheduling and calendar management")
-        print("• Product recommendations and compatibility checks")
-        print("• Document creation (proposals, contracts, plans)")
-        print()
-        print("Example queries:")
-        print("• 'Review Acme Corporation's account and identify upselling opportunities'")
-        print("• 'Pull customer data for CUST001 and suggest next actions'")
-        print("• 'Generate a quote for Enterprise Software for manufacturing company'")
-        print("• 'Schedule a demo meeting with TechStart Inc and send follow-up email'")
-        print()
-        print("Commands:")
-        print("• 'help' - Show this help message")
-        print("• 'status' - Show system status")
-        print("• 'capabilities' - Show detailed capabilities")
-        print("• 'exit' or 'quit' - Exit the system")
-        print("=" * 60)
+        print("-" * 60)
 
     async def handle_special_commands(self, user_input: str) -> bool:
         """Handle special commands. Returns True if command was handled."""
@@ -73,68 +47,13 @@ class OrchestrationChatLoop:
             await self.cleanup()
             return True
 
-        elif command == 'help':
-            self.print_welcome()
-            return True
-
-        elif command == 'status':
-            print("\nSystem Status:")
-            print("-" * 30)
-            status = await self.workflow_manager.get_system_status()
-            self.print_status(status)
-            return True
-
-        elif command == 'capabilities':
-            print("\nSystem Capabilities:")
-            print("-" * 30)
-            capabilities = await self.workflow_manager.get_available_capabilities()
-            self.print_capabilities(capabilities)
-            return True
-
         return False
-
-    def print_status(self, status: dict):
-        """Print system status in a readable format."""
-        wm_status = status.get("workflow_manager", {})
-        planner_status = status.get("planner", {})
-        coord_status = status.get("coordinator", {})
-
-        print(f"Workflow Manager: {'Ready' if wm_status.get('ready') else 'Not Ready'}")
-        print(f"Planner: {'Available' if planner_status.get('available') else 'Unavailable'}")
-        print(f"   Model: {planner_status.get('model', 'Unknown')}")
-        print(f"Coordinator: {'Ready' if coord_status.get('orchestration_ready') else 'Not Ready'}")
-        print(f"   Agents: {coord_status.get('available_agents', 0)}")
-        print(f"Status Time: {status.get('timestamp', 'Unknown')}")
-
-    def print_capabilities(self, capabilities: dict):
-        """Print system capabilities in a readable format."""
-        if "error" in capabilities:
-            print(f"Error getting capabilities: {capabilities['error']}")
-            return
-
-        # Workflow capabilities
-        wf_caps = capabilities.get("workflow_capabilities", [])
-        print("Workflow Capabilities:")
-        for cap in wf_caps:
-            print(f"   • {cap}")
-
-        # Supported queries
-        supported = capabilities.get("supported_queries", [])
-        print("\nSupported Query Types:")
-        for query_type in supported:
-            print(f"   • {query_type}")
-
-        # Example queries
-        examples = capabilities.get("example_queries", [])
-        print("\nExample Queries:")
-        for i, example in enumerate(examples[:3], 1):  # Show first 3 examples
-            print(f"   {i}. {example}")
 
     async def process_query(self, user_query: str) -> str:
         """Process a user query and return the response with detailed logging."""
         try:
             print(f"\nProcessing: {user_query}")
-            print("=" * 60)
+            print("-" * 60)
 
             # Process with detailed logging
             result = await self.workflow_manager.process_user_query_with_details(user_query)

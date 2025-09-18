@@ -273,14 +273,21 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
         for task in plan.tasks:
             for dep_id in task.dependencies:
                 if dep_id not in task_ids:
+                    print(f"DEBUG: Dependency '{dep_id}' not found in task IDs: {list(task_ids)}")
                     # Try to find a close match by checking if dependency is a substring or similar
                     found_match = False
                     for existing_id in task_ids:
                         # Handle various apostrophe and normalization issues
                         # Normalize both IDs for comparison
                         def normalize_id(id_str):
+                            # Handle corporation's -> corporation-s and other apostrophe issues
+                            normalized = id_str.lower()
+                            # Remove apostrophes and replace with nothing or hyphen
+                            normalized = normalized.replace("'s", "s").replace("'", "")
                             # Handle corporation's -> corporations vs corporation-s
-                            normalized = id_str.replace("-s-", "-").replace("-s", "").replace("corporations", "corporation")
+                            normalized = normalized.replace("-s-", "-").replace("corporations", "corporation")
+                            # Normalize common variations
+                            normalized = normalized.replace("--", "-")
                             # Remove extra hyphens and clean up
                             normalized = '-'.join(filter(None, normalized.split('-')))
                             return normalized
@@ -293,6 +300,7 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
                             normalized_dep in normalized_existing or
                             normalized_existing in normalized_dep or
                             dep_id in existing_id or existing_id in dep_id):
+                            print(f"DEBUG: Found match for '{dep_id}' -> '{existing_id}' (normalized: '{normalized_dep}' vs '{normalized_existing}')")
                             found_match = True
                             # Fix the dependency in place
                             task.dependencies = [existing_id if d == dep_id else d for d in task.dependencies]
