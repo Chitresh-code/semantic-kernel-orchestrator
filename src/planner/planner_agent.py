@@ -58,7 +58,6 @@ CRITICAL REQUIREMENT: You MUST respond with EXACTLY this JSON structure - do not
 {{
     "tasks": [list of task objects],
     "summary": "string describing the overall plan",
-    "estimated_total_duration": integer_in_minutes
 }}
 
 Each task must have EXACTLY these fields:
@@ -66,15 +65,20 @@ Each task must have EXACTLY these fields:
     "title": "Brief descriptive title",
     "description": "What needs to be done",
     "priority": "low" or "medium" or "high" or "urgent",
-    "agent_type": "sales_assistant",
+    "agent_type": "crm_specialist" or "communication_agent" or "product_specialist" or "document_specialist",
     "required_tools": ["crm_api", "email_calendar", "product_catalog", "document_generator"],
-    "estimated_duration": integer_in_minutes,
     "dependencies": []
 }}
 
 Valid tools: crm_api, email_calendar, product_catalog, document_generator
 Valid priorities: low, medium, high, urgent
-Only agent_type: sales_assistant
+Valid agent_types: crm_specialist, communication_agent, product_specialist, document_specialist
+
+AGENT TYPE MAPPING:
+- crm_specialist: Use for customer data, CRM operations, customer interactions
+- communication_agent: Use for emails, calendar, scheduling, meetings
+- product_specialist: Use for product info, quotes, recommendations, compatibility
+- document_specialist: Use for proposals, contracts, implementation plans, documents
 
 MANDATORY EXAMPLE FOR CUSTOMER DATA REQUEST:
 {{
@@ -83,23 +87,20 @@ MANDATORY EXAMPLE FOR CUSTOMER DATA REQUEST:
             "title": "Retrieve customer data",
             "description": "Pull complete customer information from CRM system",
             "priority": "high",
-            "agent_type": "sales_assistant",
+            "agent_type": "crm_specialist",
             "required_tools": ["crm_api"],
-            "estimated_duration": 10,
             "dependencies": []
         }},
         {{
             "title": "Send follow-up email",
             "description": "Create and send personalized follow-up email to customer",
             "priority": "medium",
-            "agent_type": "sales_assistant",
+            "agent_type": "communication_agent",
             "required_tools": ["email_calendar"],
-            "estimated_duration": 15,
             "dependencies": []
         }}
     ],
     "summary": "Retrieve customer data and send follow-up communication",
-    "estimated_total_duration": 25
 }}
 
 RESPOND WITH JSON ONLY - NO OTHER TEXT."""
@@ -116,18 +117,16 @@ RESPOND WITH JSON ONLY - NO OTHER TEXT."""
             "title": "Task title",
             "description": "What to do",
             "priority": "high",
-            "agent_type": "sales_assistant",
+            "agent_type": "crm_specialist",
             "required_tools": ["crm_api"],
-            "estimated_duration": 15,
             "dependencies": []
         }
     ],
     "summary": "Plan summary",
-    "estimated_total_duration": 15
 }
 
 Use only these tools: crm_api, email_calendar, product_catalog, document_generator
-Only use agent_type: sales_assistant
+Valid agent_types: crm_specialist, communication_agent, product_specialist, document_specialist
 Valid priorities: low, medium, high, urgent
 IMPORTANT: For dependencies, use kebab-case IDs like "get-customer-information", not full titles.
 
@@ -230,7 +229,6 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
                 status=TaskStatus.PENDING,
                 agent_type=task_req.agent_type,
                 required_tools=task_req.required_tools,
-                estimated_duration=task_req.estimated_duration,
                 dependencies=resolved_deps,
                 metadata={"created_by": "planner_agent"}
             )
@@ -240,7 +238,6 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
             id=plan_id,
             user_query=user_query,
             tasks=tasks,
-            estimated_total_duration=planner_response.estimated_total_duration,
             created_at=current_time
         )
 
@@ -310,10 +307,6 @@ CRITICAL: Break down complex requests into multiple specific tasks. For example:
                         validation_result["valid"] = False
                         validation_result["errors"].append(f"Task '{task.title}' depends on non-existent task ID: {dep_id}")
 
-        # Check for unrealistic duration estimates
-        total_duration = sum(task.estimated_duration or 0 for task in plan.tasks)
-        if total_duration > 480:  # More than 8 hours
-            validation_result["warnings"].append("Plan duration exceeds 8 hours - consider breaking into smaller chunks")
 
         return validation_result
 

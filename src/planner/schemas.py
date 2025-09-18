@@ -10,7 +10,6 @@ class TaskCreateRequest(BaseModel):
     priority: TaskPriority = Field(default=TaskPriority.MEDIUM, description="Task priority level")
     agent_type: str = Field(..., description="Type of agent best suited for this task (e.g., 'sales_assistant')")
     required_tools: List[str] = Field(default_factory=list, description="Tools required to complete this task")
-    estimated_duration: int = Field(default=30, description="Estimated duration in minutes", ge=1, le=480)
     dependencies: List[str] = Field(default_factory=list, description="IDs of tasks that must be completed first")
 
 
@@ -18,7 +17,6 @@ class PlannerResponse(BaseModel):
     """Structured response from the planner agent."""
     tasks: List[TaskCreateRequest] = Field(..., description="List of tasks to be executed")
     summary: str = Field(..., description="Brief summary of the plan", max_length=200)
-    estimated_total_duration: int = Field(..., description="Total estimated duration in minutes", ge=1)
 
     class Config:
         json_schema_extra = {
@@ -30,7 +28,6 @@ class PlannerResponse(BaseModel):
                         "priority": "high",
                         "agent_type": "sales_assistant",
                         "required_tools": ["crm_api"],
-                        "estimated_duration": 15,
                         "dependencies": []
                     },
                     {
@@ -39,11 +36,9 @@ class PlannerResponse(BaseModel):
                         "priority": "medium",
                         "agent_type": "sales_assistant",
                         "required_tools": ["document_generator", "product_catalog"],
-                        "estimated_duration": 45,
                         "dependencies": ["pull-customer-crm-data"]
                     }
                 ],
-                "summary": "Retrieve customer data and generate a personalized sales proposal",
-                "estimated_total_duration": 60
+                "summary": "Retrieve customer data and generate a personalized sales proposal"
             }
         }

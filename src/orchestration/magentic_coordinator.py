@@ -21,6 +21,10 @@ from semantic_kernel.kernel import Kernel
 from src.core.config import config
 from src.core.types import Plan, Task, AgentResponse, WorkflowResult, TaskStatus
 from src.agents import SalesAssistantAgent
+from src.agents.crm_specialist import CRMSpecialistAgent
+from src.agents.communication_agent import CommunicationAgent
+from src.agents.product_specialist import ProductSpecialistAgent
+from src.agents.document_specialist import DocumentSpecialistAgent
 
 
 class MagenticCoordinator:
@@ -35,7 +39,11 @@ class MagenticCoordinator:
         self.agent_responses: List[AgentResponse] = []
 
         # Initialize specialized agents
-        self.sales_assistant = SalesAssistantAgent()
+        self.sales_assistant = SalesAssistantAgent()  # Keep for backward compatibility
+        self.crm_specialist = CRMSpecialistAgent()
+        self.communication_agent = CommunicationAgent()
+        self.product_specialist = ProductSpecialistAgent()
+        self.document_specialist = DocumentSpecialistAgent()
 
     async def initialize(self):
         """Initialize the Magentic orchestration system."""
@@ -90,175 +98,164 @@ class MagenticCoordinator:
             raise
 
     async def _create_magentic_agents(self) -> List[Agent]:
-        """Create agents for Magentic orchestration."""
+        """Create specialized agents for Magentic orchestration."""
         agents = []
 
-        # Create kernel instance for Sales Assistant
-        sales_kernel = Kernel()
+        # Helper function to create kernel with OpenAI service
+        def create_kernel_with_openai():
+            kernel = Kernel()
+            openai_service = OpenAIChatCompletion(
+                ai_model_id=self.openai_config["ai_model_id"],
+                api_key=self.openai_config["api_key"]
+            )
+            kernel.add_service(openai_service)
+            settings = kernel.get_prompt_execution_settings_from_service_id("default")
+            settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
+            return kernel, settings
 
-        # Add OpenAI service to the kernel
-        openai_service = OpenAIChatCompletion(
-            ai_model_id=self.openai_config["ai_model_id"],
-            api_key=self.openai_config["api_key"]
-        )
-        sales_kernel.add_service(openai_service)
+        # 1. CRM Specialist Agent
+        crm_kernel, crm_settings = create_kernel_with_openai()
 
-        # Get execution settings and configure function choice behavior
-        settings = sales_kernel.get_prompt_execution_settings_from_service_id("default")
-        settings.function_choice_behavior = FunctionChoiceBehavior.Auto()
+        # Add CRM tools
+        crm_kernel.add_function(
+            plugin_name="CRM",
+            function=self.crm_specialist.crm_tools.get_customer_data
+        )
+        crm_kernel.add_function(
+            plugin_name="CRM",
+            function=self.crm_specialist.crm_tools.search_customers
+        )
+        crm_kernel.add_function(
+            plugin_name="CRM",
+            function=self.crm_specialist.crm_tools.get_interaction_history
+        )
+        crm_kernel.add_function(
+            plugin_name="CRM",
+            function=self.crm_specialist.crm_tools.update_customer
+        )
+        crm_kernel.add_function(
+            plugin_name="CRM",
+            function=self.crm_specialist.crm_tools.log_interaction
+        )
+        crm_kernel.add_function(
+            plugin_name="CRM",
+            function=self.crm_specialist.crm_tools.suggest_next_action
+        )
 
-        # Create and add Sales Assistant tools to the kernel
-        sales_assistant = SalesAssistantAgent()
+        crm_agent = ChatCompletionAgent(
+            kernel=crm_kernel,
+            name="CRM_Specialist",
+            description="Specialized agent for customer relationship management, data retrieval, and customer interaction tracking",
+            instructions=self.crm_specialist._get_crm_instructions(),
+            arguments=KernelArguments(settings=crm_settings),
+        )
+        agents.append(crm_agent)
 
-        # Add all CRM tools
-        sales_kernel.add_function(
-            plugin_name="CRM",
-            function=sales_assistant.crm_tools.get_customer_data
-        )
-        sales_kernel.add_function(
-            plugin_name="CRM",
-            function=sales_assistant.crm_tools.search_customers
-        )
-        sales_kernel.add_function(
-            plugin_name="CRM",
-            function=sales_assistant.crm_tools.get_interaction_history
-        )
-        sales_kernel.add_function(
-            plugin_name="CRM",
-            function=sales_assistant.crm_tools.update_customer
-        )
-        sales_kernel.add_function(
-            plugin_name="CRM",
-            function=sales_assistant.crm_tools.log_interaction
-        )
-        sales_kernel.add_function(
-            plugin_name="CRM",
-            function=sales_assistant.crm_tools.suggest_next_action
-        )
+        # 2. Communication Agent
+        comm_kernel, comm_settings = create_kernel_with_openai()
 
         # Add Email/Calendar tools
-        sales_kernel.add_function(
+        comm_kernel.add_function(
             plugin_name="EmailCalendar",
-            function=sales_assistant.email_calendar_tools.send_email
+            function=self.communication_agent.email_calendar_tools.send_email
         )
-        sales_kernel.add_function(
+        comm_kernel.add_function(
             plugin_name="EmailCalendar",
-            function=sales_assistant.email_calendar_tools.send_custom_email
+            function=self.communication_agent.email_calendar_tools.send_custom_email
         )
-        sales_kernel.add_function(
+        comm_kernel.add_function(
             plugin_name="EmailCalendar",
-            function=sales_assistant.email_calendar_tools.schedule_meeting
+            function=self.communication_agent.email_calendar_tools.schedule_meeting
         )
-        sales_kernel.add_function(
+        comm_kernel.add_function(
             plugin_name="EmailCalendar",
-            function=sales_assistant.email_calendar_tools.find_available_slots
+            function=self.communication_agent.email_calendar_tools.find_available_slots
         )
-        sales_kernel.add_function(
+        comm_kernel.add_function(
             plugin_name="EmailCalendar",
-            function=sales_assistant.email_calendar_tools.get_calendar_events
+            function=self.communication_agent.email_calendar_tools.get_calendar_events
         )
-        sales_kernel.add_function(
+        comm_kernel.add_function(
             plugin_name="EmailCalendar",
-            function=sales_assistant.email_calendar_tools.manage_meeting
+            function=self.communication_agent.email_calendar_tools.manage_meeting
         )
+
+        communication_agent = ChatCompletionAgent(
+            kernel=comm_kernel,
+            name="Communication_Agent",
+            description="Specialized agent for email communication and calendar management tasks",
+            instructions=self.communication_agent._get_communication_instructions(),
+            arguments=KernelArguments(settings=comm_settings),
+        )
+        agents.append(communication_agent)
+
+        # 3. Product Specialist Agent
+        product_kernel, product_settings = create_kernel_with_openai()
 
         # Add Product Catalog tools
-        sales_kernel.add_function(
+        product_kernel.add_function(
             plugin_name="ProductCatalog",
-            function=sales_assistant.product_catalog_tools.get_product_info
+            function=self.product_specialist.product_catalog_tools.get_product_info
         )
-        sales_kernel.add_function(
+        product_kernel.add_function(
             plugin_name="ProductCatalog",
-            function=sales_assistant.product_catalog_tools.search_products
+            function=self.product_specialist.product_catalog_tools.search_products
         )
-        sales_kernel.add_function(
+        product_kernel.add_function(
             plugin_name="ProductCatalog",
-            function=sales_assistant.product_catalog_tools.generate_quote
+            function=self.product_specialist.product_catalog_tools.generate_quote
         )
-        sales_kernel.add_function(
+        product_kernel.add_function(
             plugin_name="ProductCatalog",
-            function=sales_assistant.product_catalog_tools.recommend_products
+            function=self.product_specialist.product_catalog_tools.recommend_products
         )
-        sales_kernel.add_function(
+        product_kernel.add_function(
             plugin_name="ProductCatalog",
-            function=sales_assistant.product_catalog_tools.check_compatibility
+            function=self.product_specialist.product_catalog_tools.check_compatibility
         )
+
+        product_agent = ChatCompletionAgent(
+            kernel=product_kernel,
+            name="Product_Specialist",
+            description="Specialized agent for product catalog management, recommendations, and pricing",
+            instructions=self.product_specialist._get_product_instructions(),
+            arguments=KernelArguments(settings=product_settings),
+        )
+        agents.append(product_agent)
+
+        # 4. Document Specialist Agent
+        doc_kernel, doc_settings = create_kernel_with_openai()
 
         # Add Document Generator tools
-        sales_kernel.add_function(
+        doc_kernel.add_function(
             plugin_name="DocumentGenerator",
-            function=sales_assistant.document_generator_tools.generate_proposal
+            function=self.document_specialist.document_generator_tools.generate_proposal
         )
-        sales_kernel.add_function(
+        doc_kernel.add_function(
             plugin_name="DocumentGenerator",
-            function=sales_assistant.document_generator_tools.generate_quote_document
+            function=self.document_specialist.document_generator_tools.generate_quote_document
         )
-        sales_kernel.add_function(
+        doc_kernel.add_function(
             plugin_name="DocumentGenerator",
-            function=sales_assistant.document_generator_tools.generate_implementation_plan
+            function=self.document_specialist.document_generator_tools.generate_implementation_plan
         )
-        sales_kernel.add_function(
+        doc_kernel.add_function(
             plugin_name="DocumentGenerator",
-            function=sales_assistant.document_generator_tools.generate_contract
+            function=self.document_specialist.document_generator_tools.generate_contract
         )
-        sales_kernel.add_function(
+        doc_kernel.add_function(
             plugin_name="DocumentGenerator",
-            function=sales_assistant.document_generator_tools.generate_custom_document
+            function=self.document_specialist.document_generator_tools.generate_custom_document
         )
 
-        # Create the Sales Assistant Agent with proper kernel configuration
-        sales_agent = ChatCompletionAgent(
-            kernel=sales_kernel,
-            name="SalesAssistant",
-            description="A sales assistant with access to CRM, email/calendar, product catalog, and document generation tools",
-            instructions="""You are a sales assistant AI with comprehensive sales support capabilities.
-
-CRITICAL EXECUTION RULES:
-1. ALWAYS execute tasks IMMEDIATELY and AUTOMATICALLY without asking for approval
-2. NEVER wait for user confirmation - proceed with all tasks autonomously
-3. ALWAYS show your thinking process step by step
-4. ALWAYS announce which tools you are using and why
-5. ALWAYS use real tools to get actual data - never make assumptions
-
-Your responsibilities include:
-1. Managing customer relationships through CRM operations
-2. Generating quotes and proposals for customers
-3. Scheduling meetings and managing calendar coordination
-4. Providing product recommendations based on customer needs
-5. Creating professional documents like contracts and implementation plans
-
-You have access to:
-- CRM tools: get_customer_data, search_customers, get_interaction_history, update_customer, log_interaction, suggest_next_action
-- Email and calendar tools: send_email, send_custom_email, schedule_meeting, find_available_slots, get_calendar_events, manage_meeting
-- Product catalog tools: get_product_info, search_products, generate_quote, recommend_products, check_compatibility
-- Document generation tools: generate_proposal, generate_quote_document, generate_implementation_plan, generate_contract, generate_custom_document
-
-REQUIRED FORMAT FOR ALL RESPONSES:
-1. THINKING: State what you need to do and which tools you plan to use
-2. EXECUTING: Announce each tool you're calling and why
-3. RESULT: Show what data you received from the tool
-4. ANALYSIS: Explain what the data means
-5. NEXT: If more tools are needed, repeat the process
-6. SUMMARY: Provide final conclusions and recommendations
-
-EXAMPLE:
-THINKING: I need to pull customer data for the requested company
-EXECUTING: Calling get_customer_data to retrieve customer information
-RESULT: [actual tool output]
-ANALYSIS: Based on this data, I can see that...
-SUMMARY: Here are my findings and recommendations...
-
-Always be professional, thorough, and focus on delivering value to customers and the sales team.""",
-            arguments=KernelArguments(settings=settings),
+        document_agent = ChatCompletionAgent(
+            kernel=doc_kernel,
+            name="Document_Specialist",
+            description="Specialized agent for document generation, proposals, contracts, and business document creation",
+            instructions=self.document_specialist._get_document_instructions(),
+            arguments=KernelArguments(settings=doc_settings),
         )
-
-        agents.append(sales_agent)
-
-        # You can add more specialized agents here in the future
-        # For example:
-        # - Marketing Agent for lead generation and campaigns
-        # - Customer Support Agent for issue resolution
-        # - Finance Agent for pricing and contract terms
+        agents.append(document_agent)
 
         return agents
 
@@ -341,7 +338,6 @@ Always be professional, thorough, and focus on delivering value to customers and
 
             print(f"\nExecuting plan: {plan.id}")
             print(f"Tasks: {len(plan.tasks)}")
-            print(f"Estimated duration: {plan.estimated_total_duration} minutes")
             print(f"\nTask description for Magentic:")
             print(task_description)
             print("\n" + "="*50)
@@ -530,11 +526,32 @@ Always be professional, thorough, and focus on delivering value to customers and
     async def execute_single_task(self, task: Task) -> AgentResponse:
         """Execute a single task using the appropriate specialized agent."""
         try:
-            if task.agent_type == "sales_assistant":
+            # Route tasks to specialized agents based on agent_type
+            if task.agent_type == "crm_specialist":
+                return await self.crm_specialist.execute_task(task)
+            elif task.agent_type == "communication_agent":
+                return await self.communication_agent.execute_task(task)
+            elif task.agent_type == "product_specialist":
+                return await self.product_specialist.execute_task(task)
+            elif task.agent_type == "document_specialist":
+                return await self.document_specialist.execute_task(task)
+            elif task.agent_type == "sales_assistant":
+                # Keep sales_assistant for backward compatibility
                 return await self.sales_assistant.execute_task(task)
             else:
-                # For unknown agent types, use the sales assistant as fallback
-                return await self.sales_assistant.execute_task(task)
+                # Route to appropriate agent based on required tools
+                required_tools = task.required_tools
+                if "crm_api" in required_tools:
+                    return await self.crm_specialist.execute_task(task)
+                elif "email_calendar" in required_tools:
+                    return await self.communication_agent.execute_task(task)
+                elif "product_catalog" in required_tools:
+                    return await self.product_specialist.execute_task(task)
+                elif "document_generator" in required_tools:
+                    return await self.document_specialist.execute_task(task)
+                else:
+                    # Default fallback to sales assistant
+                    return await self.sales_assistant.execute_task(task)
 
         except Exception as e:
             return AgentResponse(
@@ -550,7 +567,10 @@ Always be professional, thorough, and focus on delivering value to customers and
         """Get information about available agents."""
         return {
             "sales_assistant": self.sales_assistant.get_agent_info(),
-            # Future agents can be added here
+            "crm_specialist": self.crm_specialist.get_agent_info(),
+            "communication_agent": self.communication_agent.get_agent_info(),
+            "product_specialist": self.product_specialist.get_agent_info(),
+            "document_specialist": self.document_specialist.get_agent_info(),
         }
 
     async def test_orchestration(self) -> Dict[str, Any]:

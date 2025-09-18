@@ -25,7 +25,6 @@ class Task(BaseModel):
     status: TaskStatus = Field(default=TaskStatus.PENDING, description="Current status of the task")
     agent_type: str = Field(..., description="Type of agent best suited for this task")
     required_tools: List[str] = Field(default_factory=list, description="Tools required to complete this task")
-    estimated_duration: Optional[int] = Field(None, description="Estimated duration in minutes")
     dependencies: List[str] = Field(default_factory=list, description="IDs of tasks that must be completed first")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional task-specific metadata")
 
@@ -34,7 +33,6 @@ class Plan(BaseModel):
     id: str = Field(..., description="Unique identifier for the plan")
     user_query: str = Field(..., description="Original user query that generated this plan")
     tasks: List[Task] = Field(..., description="List of tasks to be executed")
-    estimated_total_duration: Optional[int] = Field(None, description="Total estimated duration in minutes")
     created_at: str = Field(..., description="Timestamp when the plan was created")
 
     def get_ready_tasks(self) -> List[Task]:
